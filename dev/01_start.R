@@ -20,7 +20,7 @@ golem::fill_desc(
   author_first_name = "Mathieu", # Your First Name
   author_last_name = "Bousquet", # Your Last Name
   author_email = "mathieu.bousquet2@gmail.com", # Your Email
-  repo_url = NULL # The URL of the GitHub Repo (optional) 
+  repo_url = "https://github.com/mbousq/MSinco" # The URL of the GitHub Repo (optional) 
 )
 
 ## Set {golem} options ----
@@ -35,9 +35,9 @@ usethis::use_lifecycle_badge( "Experimental" )
 usethis::use_news_md( open = FALSE )
 
 ## Use git ----
-usethis::use_git()
+# usethis::use_git() # DONE
 
-ye## Init Testing Infrastructure ----
+## Init Testing Infrastructure ----
 ## Create a template for tests
 golem::use_recommended_tests()
 

@@ -34,7 +34,7 @@ install.packages("MSinco")
 This is a basic example which shows you how to solve a common problem:
 
 ```{r example}
-library(MSinco)
+# library(MSinco)
 ## basic example code
 ```
 
