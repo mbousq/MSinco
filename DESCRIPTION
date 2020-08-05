@@ -1,0 +1,13 @@
+Package: MSinco
+Title: MSinco
+Version: 0.0.0.9000
+Authors@R: person('Mathieu', 'Bousquet', email = 'mathieu.bousquet2@gmail.com', role = c('cre', 'aut'))
+Description: Visualize, integrate and correct MS data.
+License: MIT + file LICENSE
+Imports: 
+    config,
+    golem,
+    shiny
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
