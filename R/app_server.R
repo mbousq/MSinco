@@ -85,7 +85,7 @@ app_server <- function( input, output, session ) {
   
   output$selectedFragment <- renderUI({
     # req(input$tabs)
-    req(rawData(), paramFileTable())
+    req(rawData(), paramFile())
     # req(input$tabs == "SIM" | input$tabs == "MSpectrum" | input$tabs == "TIC" | input$tabs == "Parameters")
     
     # if (isolate(input$tabs) == "TIC") {
@@ -180,7 +180,7 @@ app_server <- function( input, output, session ) {
     #  paramFileTable
   }, {
     
-    browser()
+    # browser()
     # req(rawData(), paramFileTable())
     
     switch (input$tabs,
@@ -436,8 +436,8 @@ app_server <- function( input, output, session ) {
                              #max = max(rawData1()@featureData@data$retentionTime),
                              value = paramFileTable()[name == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
                              step = 0.1)
-                
-                
+
+                                
               })
               
               output$rtimeR <- renderUI({
@@ -513,106 +513,100 @@ app_server <- function( input, output, session ) {
             }
     )
     
-    
-    
     # cat(file=stderr(),"at inputs:", input$mass0)
     
     
-  }, priority = 1,ignoreInit = T,label = "inputs")
+  }, priority = 1, ignoreInit = T, label = "inputs")
   
   # Solution: use updateNumericInput to maybe flush directly to the client. 
   # # OK: ajouteau debut de chaque observevent pour creer des plots (sim, tic, mspec) les valeurs, ex:
   #   
   #   N_atom <- paramFileTable()[name == input$selectedFragment, 5] etc pour decoreller UI et SEVER. 
   # Ensuite sur les tabs SIM etc utilise updatecheckbox poour choisir selected = input$selected fragment, comme ca l utilisateur n arrive jamais sur le "TIC"
-  
-  # observeEvent({
-  #   req(input$tabs == "TIC")
-  #   # input$rtimeR
-  # }, {
   # 
-  #   # observe({
-  #   req(input$tabs == "TIC", input$rtimeL, input$rtimeR)# , input$selectedFragment, input$rtimeL, input$rtimeR)
-  #   # browser()
-  #   #  if (isTRUE(input$tabs == "TIC")) {  #  replaced by req(input$tabs == "TIC")
-  # 
-  #   TICplots <<- lapply(seq_along(rawData()), function(i) {
-  # 
-  #     #browser()
-  # 
-  #     DT <- rawData()[[i]][, .(tic = sum(i)), by = .(rt, phenoData)]
-  #     dataIndexL <- MALDIquant::match.closest(input$rtimeL*60,DT$rt)
-  #     dataIndexR <- MALDIquant::match.closest(input$rtimeR*60,DT$rt)
-  #     DT <- DT[dataIndexL:dataIndexR]
-  #     title = paste0("TIC_",DT$phenoData[[1]])
-  # 
-  #     tic_p  <- canvas_plots + ggplot2::geom_line(data = DT, aes(rt/60,tic)) + ggplot2::labs(title = title, x = "retention time (min)", y = "intensity")
-  # 
-  # 
-  #     output[[paste0("tic",i, "_f", input$folderButton)]] <- renderPlot({
-  # 
-  #       tic_p
-  # 
-  #     })
-  #     return(tic_p)
-  # 
-  #   })
-  # 
-  #   output$myTicsA <- renderUI({
-  #     # browser()
-  #     # req(TICplots())
-  #     # req(rawData())
-  #     myTicsA =  lapply(seq_len(plotIndex), function(i) {
-  # 
-  #       plotOutput(paste0("tic",i, "_f", input$folderButton),hover = "plot_hover_tic1") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
-  #     })
-  # 
-  #     myTicsA
-  #   })
-  # 
-  #   output$myTicsB <- renderUI({
-  #     #browser()
-  #     #   req(TICplots())
-  #     req(length(rawData()) > 1)
-  #     # create tabPanel with datatable in it
-  #     myTicsB = lapply((plotIndex+1):length(rawData()), function(i) {
-  # 
-  #       plotOutput(paste0("tic",i, "_f", input$folderButton),hover = "plot_hover_tic2") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
-  #       #plotOutput(paste0("MSpectrum",i))
-  # 
-  #     })
-  # 
-  #     myTicsB # do.call(mainPanel, myTics)
-  #   })
-  #   #    }
-  #   #})
-  # },ignoreInit = T, once = T)
+  observeEvent({
+    input$rtimeR
+    input$rtimeL
+  }, {
+
+    # observe({
+    req(input$tabs == "TIC", input$rtimeL, input$rtimeR)# , input$selectedFragment, input$rtimeL, input$rtimeR)
+    # browser()
+    #  if (isTRUE(input$tabs == "TIC")) {  #  replaced by req(input$tabs == "TIC")
+
+    TICplots <<- lapply(seq_along(rawData()), function(i) {
+
+      #browser()
+
+      DT <- rawData()[[i]][, .(tic = sum(i)), by = .(rt, phenoData)]
+      dataIndexL <- MALDIquant::match.closest(input$rtimeL*60,DT$rt)
+      dataIndexR <- MALDIquant::match.closest(input$rtimeR*60,DT$rt)
+      DT <- DT[dataIndexL:dataIndexR]
+      title = paste0("TIC_",DT$phenoData[[1]])
+
+      tic_p  <- canvas_plots + ggplot2::geom_line(data = DT, aes(rt/60,tic)) + ggplot2::labs(title = title, x = "retention time (min)", y = "intensity")
+
+
+      output[[paste0("tic",i, "_f", input$folderButton)]] <- renderPlot({
+
+        tic_p
+
+      })
+      return(tic_p)
+
+    })
+
+    output$myTicsA <- renderUI({
+      # browser()
+      # req(TICplots())
+      # req(rawData())
+      myTicsA =  lapply(seq_len(plotIndex), function(i) {
+
+        plotOutput(paste0("tic",i, "_f", input$folderButton),hover = "plot_hover_tic1") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+      })
+
+      myTicsA
+    })
+
+    output$myTicsB <- renderUI({
+      #browser()
+      #   req(TICplots())
+      req(length(rawData()) > 1)
+      # create tabPanel with datatable in it
+      myTicsB = lapply((plotIndex+1):length(rawData()), function(i) {
+
+        plotOutput(paste0("tic",i, "_f", input$folderButton),hover = "plot_hover_tic2") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        #plotOutput(paste0("MSpectrum",i))
+
+      })
+
+      myTicsB # do.call(mainPanel, myTics)
+    })
+    #    }
+    #})
+  },ignoreInit = T, once = T)
   
   # create tic
   observeEvent({
     # req(rawData(), paramFileTable())
     input$run
     # input$run2
+    # isolate(input$tabs)
     # req(input$tabs == "TIC")
+    # req(isolate(input$tabs) == "TIC")
     # input$selectedFragment
-    
     
   }, {
     
     # browser()
-    observeEvent(NULL, {
-      
-      invalidateLater(0)
-    },ignoreNULL = F,once = T)
-    
     # observe({
-    #req(input$tabs == "TIC", input$rtimeL, input$rtimeR)# , input$selectedFragment, input$rtimeL, input$rtimeR)
+    req(input$tabs == "TIC", input$rtimeL, input$rtimeR) # , input$selectedFragment, input$rtimeL, input$rtimeR)
     # browser()
     #  if (isTRUE(input$tabs == "TIC")) {  #  replaced by req(input$tabs == "TIC")
     
     TICplots <<- lapply(seq_along(rawData()), function(i) {
       
-      #browser()
+      # browser()
       # OLD
       
       DT <- rawData()[[i]][, .(tic = sum(i)), by = .(rt, phenoData)]
@@ -638,25 +632,25 @@ app_server <- function( input, output, session ) {
     })
     
     output$myTicsA <- renderUI({
-      #browser()
+      # browser()
       #req(TICplots())
       # req(rawData())
       myTicsA =  lapply(seq_len(plotIndex), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", input$folderButton), hover = "plot_hover_tic1") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", input$folderButton), hover = paste0("plot_hover_tic",i, "_f", input$folderButton)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
       })
       
       myTicsA
     })
     
     output$myTicsB <- renderUI({
-      #browser()
+      # browser()
       #   req(TICplots())
       req(length(rawData()) > 1)
       # create tabPanel with datatable in it
       myTicsB = lapply((plotIndex+1):length(rawData()), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", input$folderButton), hover = "plot_hover_tic2") # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", input$folderButton), hover = paste0("plot_hover_tic",i, "_f", input$folderButton)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -665,7 +659,7 @@ app_server <- function( input, output, session ) {
     })
     #    }
     #})
-  },label = "tic",ignoreInit = T)
+  },ignoreInit = T,label = "tic")
   
   
   
@@ -679,11 +673,12 @@ app_server <- function( input, output, session ) {
     # req(input$run,cancelOutput = T)
     input$run
     # req(input$tabs == "MSpectrum")
+    # req(isolate(input$tabs) == "MSpectrum")
     # input$selectedFragment
   }, {
     
     
-    # req(input$tabs == "MSpectrum", input$rtime) # if I add input$selectedFragment != "TIC" here in req() isntead of the if loop it doesnt work properly (triggers plotting twice)
+    req(input$tabs == "MSpectrum", input$rtime) # if I add input$selectedFragment != "TIC" here in req() isntead of the if loop it doesnt work properly (triggers plotting twice)
     
     
     #if (input$selectedFragment != "TIC") {
@@ -768,12 +763,13 @@ app_server <- function( input, output, session ) {
     # req(input$run,cancelOutput = T)
     input$run
     # req(input$tabs == "SIM")
+    # req(isolate(input$tabs) == "SIM")
     # input$selectedFragment
   }, {
     
     
     # browser()
-    # req(input$tabs == "SIM", input$mass0, input$N_atom)
+    req(input$tabs == "SIM", input$mass0, input$N_atom,input$rtimeL,input$rtimeR)
     
     SIMplots <<- lapply(seq_along(rawData()), function(i) {
       
@@ -861,7 +857,7 @@ app_server <- function( input, output, session ) {
       SIMB # do.call(mainPanel, myTics)
     })
     
-  },priority = 0,label = "sim")
+  },ignoreInit = T, label = "sim")
   
   
   
@@ -1134,7 +1130,7 @@ app_server <- function( input, output, session ) {
   # values2 <- reactiveValues(DF = NULL)
   
   # Data table
-  observeEvent({input$fileButton}, {
+  observeEvent(paramFile(), {
     
     # browser()
     
@@ -1163,23 +1159,26 @@ app_server <- function( input, output, session ) {
           #       editable = 'cell',selection = 'none',)
           # })
           
-          "Error: the parameterFile is not properly formatted."
+          warning("The parameterFile is not properly formatted.")
+          showNotification("Error: the parameterFile is not properly formatted.")
+          
         }
       )
       
       output$table <- DT::renderDT({
         #browser()
         
-        DT::datatable(isolate(values[["DF"]]), options = list(
+        DT::datatable(isolate(values[["DF"]]), style = "bootstrap", extensions = 'AutoFill', options = list(
+          autoFill = TRUE,
           pageLength = 50,
           lengthMenu = c(10, 25, 50, 100, 1000)
         ), 
-        editable = 'cell',selection = 'none')
+        editable = 'cell', selection = 'none')
         
       })
       
     }
-  },label = "datatable")
+  },label = "dataTable")
   
   
   # # RHANDSONTABLE
@@ -1273,7 +1272,8 @@ app_server <- function( input, output, session ) {
     output$table <- DT::renderDT({
       #browser()
       
-      DT::datatable(DF, options = list(
+      DT::datatable(DF,extensions = 'AutoFill', style = "bootstrap", options = list(
+        autoFill = TRUE,
         pageLength = 50,
         lengthMenu = c(10, 25, 50, 100, 1000)
       ), 
