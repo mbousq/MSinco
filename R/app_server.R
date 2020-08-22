@@ -28,7 +28,7 @@ app_server <- function( input, output, session ) {
   directory <- eventReactive(input$folderButton, {
     # browser()
     # req(input$fileButton)
-    req(paramFile())
+    # req(paramFile())
     
     tryCatch(
       
@@ -47,6 +47,40 @@ app_server <- function( input, output, session ) {
     
   })
   
+  directory <- eventReactive(input$newDirButton, {
+    # browser()
+    # req(input$fileButton)
+    # req(paramFile())
+    
+    tryCatch(
+      
+      # if (isNamespaceLoaded("rstudioapi")) {
+      #   
+      #   rstudioapi::selectDirectory()
+      # } else {
+      #   
+    tmp <- easycsv::choose_dir()
+      
+      # }
+      ,
+      warning = function(cond) {message("Please choose a valid directory"); return(NULL) }
+      # error = function(cond) {message(); return(NULL)}
+    )
+    
+    pathDir <- paste0(tmp, "/Experiment1_", format(Sys.time(), "%d-%m-%y_%H%M%S"))
+    dir.create(pathDir, mode = "0777")
+    file.copy(system.file("extdata","Parameters" ,package = "MSinco"), pathDir,recursive = T)
+    file.copy(system.file("extdata","Netcdfs" ,package = "MSinco"), pathDir, recursive = T)
+    
+    return(pathDir)
+    # 
+    # dir.create(paste0(tmp,"/Netcdfs"), mode = "0777")
+    # dir.create(paste0(tmp,"/Parameters"), mode = "0777")
+    # dir.create(paste0(tmp,"/Active Plots"), mode = "0777")
+    
+    
+  })
+  
   # observeEvent(input$saveButton, {
   #   xlsx::write.xlsx(ParameterFile.tbl(), file = paramFile())
   #    showNotification("Saved !")
@@ -56,7 +90,7 @@ app_server <- function( input, output, session ) {
   rawData <- reactive({
     # browser()
     req(directory())
-    
+    # future::plan("multiprocess")
     # browser()
     # req(input$fileButton != 0)
     #if (!is.null(directory())) {
@@ -77,6 +111,8 @@ app_server <- function( input, output, session ) {
       
       plotIndex <<- findInterval(length(tmp)/2, seq_len(length(tmp)), all.inside = T)
     })
+    
+    # future::plan("sequential")
     tmp
     # } else { NULL }
     
@@ -503,13 +539,13 @@ app_server <- function( input, output, session ) {
                 
               })
               
-              output$undoButton <- renderUI({
-                
-                req(rawData(), input$tabs == "Parameters")
-                
-                actionButton("undoButton","undo", width = "100%", style="margin-bottom:8px")
-                
-              })
+              # output$undoButton <- renderUI({
+              #   
+              #   req(rawData(), input$tabs == "Parameters")
+              #   
+              #   actionButton("undoButton","undo", width = "100%", style="margin-bottom:8px")
+              #   
+              # })
             }
     )
     

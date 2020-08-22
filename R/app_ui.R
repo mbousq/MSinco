@@ -12,7 +12,7 @@ app_ui <- function(request) {
     # List the first level UI elements here 
     fluidPage(
       h1("MSinco"),
-      shinyjs::useShinyjs(), 
+      # shinyjs::useShinyjs(), 
       # theme = shinytheme("paper"),
       theme = "paper.min.css",
       # tags$link(rel = "stylesheet", type = "text/css", href = "litera.css"),
@@ -47,6 +47,7 @@ app_ui <- function(request) {
         # default:"position:fixed;width:inherit;"
         
         sidebarPanel(width = 3,style = "position:fixed;width:22%;", 
+                     actionButton('newDirButton', 'Create directory',width = "49%"),actionButton('importDirButton', 'Import directory',width = "49%"),
                      actionButton('fileButton', 'Parameter file',width = "49%"), actionButton("folderButton", "Netcdfs folder",width = "49%"), br(), 
                      uiOutput("LB"),
                      uiOutput("RB"), # hr(),
@@ -62,7 +63,7 @@ app_ui <- function(request) {
                      uiOutput("saveActivePlotsButton"),
                      uiOutput("saveTotableButton"),
                      uiOutput("runButton"),
-                     uiOutput("undoButton"),
+                     # uiOutput("undoButton"),
                      #uiOutput("selectedFragment2"),
                      br(),
                      # actionButton("refreshInputsButton","Refresh Inputs"),
