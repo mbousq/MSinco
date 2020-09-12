@@ -1432,6 +1432,11 @@ app_server <- function( input, output, session ) {
   # },priority = 2)
   
   # create tic
+  
+  # values[["DF"]][name ==input$selectedFragment, 2] <- input$rtimeL
+  # values[["DF"]][name ==input$selectedFragment, 3] <- input$rtimeR
+  # 
+  
   observeEvent({
     # req(values[["rawData"]], paramFileTable())
     # values[["Fragment"]]
@@ -1510,7 +1515,7 @@ app_server <- function( input, output, session ) {
         # browser()
         
         lapply(seq_along(plots_tic), FUN =  function(i) {
-        output[[paste0("tic", i,  "_f", values[["runNo"]], input$run1)]] <- renderCachedPlot({
+        output[[paste0("tic", i,  "_f", values[["runNo"]])]] <- renderCachedPlot({
 
           plots_tic[[i]]
 
@@ -1521,7 +1526,7 @@ app_server <- function( input, output, session ) {
       } else {
 
         lapply(seq_along(plots_tic), FUN =  function(i) {
-        output[[paste0("tic",i , "_f", values[["runNo"]], input$run1)]] <- renderPlot({
+        output[[paste0("tic",i , "_f", values[["runNo"]])]] <- renderPlot({
           
           plots_tic[[i]]
           
@@ -1539,7 +1544,7 @@ app_server <- function( input, output, session ) {
       # req(values[["rawData"]])
       plots_ticA <-  lapply(seq_len(splitIndex), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", values[["runNo"]]), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]])) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
       })
       
     })
@@ -1551,7 +1556,7 @@ app_server <- function( input, output, session ) {
       # create tabPanel with datatable in it
       plots_ticB <- lapply((splitIndex+1):length(plots_tic), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]])) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -1673,7 +1678,7 @@ app_server <- function( input, output, session ) {
         
     lapply(seq_along(plots_ms), FUN =  function(i) {
       
-        output[[paste0("mspec", i, "_f", values[["runNo"]], input$run2)]] <- renderPlot({
+        output[[paste0("mspec", i, "_f", values[["runNo"]])]] <- renderPlot({
           
           plots_ms[[i]]
           
