@@ -1,0 +1,1092 @@
+```{r echo=FALSE,warning=FALSE,include=T }
+library(readxl);library(xcms);library(reshape2);library(ggplot2);library(gtools);library(tidyverse);library(plyr);library(xlsx);library(xlsxjars);library(rowr);library(shiny);library(lattice); library(rhandsontable); library(easycsv); library(shinyFeedback); library(ggforce); library(waiter); library(progressr)
+
+
+pathExperimentFolder <- "//home//mathieu//Documents//Data//MSinco//MSTFA over time//"
+parameterFile <- read_excel(paste0(pathExperimentFolder, "Parameters", "//ParameterFile.xlsx"))
+moleculeFile <- read_excel(paste0(pathExperimentFolder, "Parameters", "//MoleculeFile.xlsx"))
+netCDFs <- paste0(pathExperimentFolder, "Netcdfs//") # where your netCDF files are
+
+
+system.time({
+rawData <- c()
+for (i in seq_along(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))) {
+  rawData <- c(rawData, readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk"))
+}
+})
+
+
+system.time({
+
+rawData10  <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE)),msLevel. = 1 ,mode = "onDisk")
+
+})
+
+
+# The following was about 53 sec while the mclapply version was about 38-40 sec.
+# So I could still use it and then group by the "file" column to do the underlying operation. I wonder if that would make a performance imporvment instead using lists. Basically: is data.frame() + group() and operations faster than using list() with apply-family ?
+
+system.time({
+
+rawData11  <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE)),msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+  
+})
+
+
+rawData7 <- vector("list", 8)
+length(rawData)
+
+system.time({
+rawData5 <- mclapply(1:8, function(i) {
+  
+test  <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+  
+  
+})
+})
+
+rawData7 <- vector("list", 8)
+
+system.time({
+rawData5 <- pbmcapply::pbmclapply(1:8, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk")
+  
+})
+
+rawData7 <- pbmcapply::pbmcmapply(function(rawData5, i) {
+  
+  as(rawData5, "data.frame")
+  
+}, rawData5 = rawData5, i = 1:8)
+
+
+})
+
+
+
+i=0
+t <- lapply(1:8, function(i,j) {
+  
+  i <<- i
+})
+
+system.time({
+  
+  rawData7 <- vector("list", 8)
+  rawData5 <- vector("list", 8)
+  for (i in 1:8) {
+    rawData7[[i]]  <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk")
+
+rawData5[[i]] <- as(rawData7[[i]], "data.frame")
+    
+  }
+})
+
+cl <- makeCluster(2)
+registerDoParallel(cl)
+clusterEvalQ(cl, {library(xcms);library(gtools);library(magrittr)})
+clusterExport(cl, "netCDFs")
+system.time({
+rawData5 <- foreach(i= 1:8) %dopar% as(readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk"),"data.frame")
+  
+})
+stopCluster(cl)
+
+assign(rawData7[[1]], rawData[[1]],envir = globalenv())
+
+system.time({
+
+  rawData5 <- lapply(1:8, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+
+    })
+
+})
+
+cl <- makeCluster(2)
+clusterEvalQ(cl, {library(xcms);library(gtools);library(magrittr)})
+clusterExport(cl, "netCDFs")
+system.time({
+rawData5 <- parLapply(cl,1:8, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+})
+})
+
+stopCluster(cl)
+
+library(doParallel)  
+no_cores <- detectCores() - 1  
+cl <- makeCluster(no_cores, type="FORK")  
+registerDoParallel(cl)  
+result <- foreach(i=10:10000) %dopar% getPrimeNumbers(i)
+
+
+
+system.time({
+rawData5 <- bplapply(1:2, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+})
+})
+
+plan(multiprocess)
+system.time({
+  
+rawData5 <- future_lapply(1:2, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+})
+})
+
+system.time({
+rawData5 <- lapply(1:2, function(i) {
+  
+  readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk") %>% as("data.frame")
+})
+})
+
+system.time({
+
+  test <- lapply(seq_along(netCDFs), function(i) {
+  
+    data <- readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
+  df <- as(data,  "data.frame")
+  df$phenoData <- data@phenoData %>% rownames()
+  df
+})
+})
+
+
+for (i in seq_along(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))) {
+  rawData <- c(rawData, readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[i],msLevel. = 1 ,mode = "onDisk"))
+}
+#})
+
+
+rawDataL <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE)),msLevel. = 1 ,mode = "onDisk")
+
+rawData1 <- readMSData(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[1],msLevel. = 1, mode = "onDisk")
+
+rawData1 %>% filterRt() %>% featureDefinitions()
+rownames(phenoDataFromPaths("/home/mathieu/Documents/MSinco demo/MSinco demo/BSTFA T24h.CDF"))
+
+  output$fileValue
+mychr <- chromatogram(rawData1)
+raw_data <- xcmsRaw(mixedsort(list.files(netCDFs, full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))[1])
+
+intensity <- rawData1@featureData@data$totIonCurrent #intensity(rawData1) %>% sapply(sum)
+rtime <- rtime(rawData1)
+
+plot(intensity~rtime,type="l",xlab="Retention time (sec)", ylab= "Intensity", main= "TIC")
+
+
+ui <- fluidPage(shinyjs::useShinyjs(),
+
+  #shinyFilesButton('files', 'File select', 'Please select a file', FALSE),
+  
+  # fluidRow(column(2,actionButton("folderButton", "Netcdfs Folder"),actionButton('fileButton', 'Parameter file')), column(4,checkboxGroupInput("savePlots",NULL, list("TIC" = 1, "SIM" = 2, "MSpectrum" = 3),inline = T)), column(2,actionButton("savePlotsButton", "Save plots"))
+  # ),
+  # wellPanel(
+  #   fluidRow(column(2,actionButton("folderButton", "Netcdfs Folder")), column(10,checkboxGroupInput("savePlots",NULL, c("TIC", "SIM", "MSpectrum"),inline = T,))
+  # ),
+  #   fluidRow(column(2,actionButton('fileButton', 'Parameter file')), column(10,actionButton("savePlotsButton", "Save plots"))
+  # )),
+
+  # Add file upload manager
+   #fileInput("file", label = h3("File input")),
+  # hr(),
+  # fluidRow(column(4, verbatimTextOutput("fileValue"))),
+
+  # App title ----
+  titlePanel("Inputs"),
+
+  # Sidebar layout with a input and output definitions ----
+  sidebarLayout(
+
+    # Sidebar panel for inputs ----
+    # change background color of sidebar panel: include tags$style(".well {background-color:#f2f3f5;}") inside
+    # default:"position:fixed;width:inherit;"
+    
+    sidebarPanel(width = 3,style = "position:fixed;width:22%;", 
+                 actionButton("folderButton", "Netcdfs folder"),actionButton('fileButton', 'Parameter file'), hr(), 
+                uiOutput("rtimeL_TIC"),
+                 uiOutput("rtimeR_TIC"), # hr(),
+                uiOutput("rtime"), # hr(),
+                 uiOutput("rtimeL"),
+                uiOutput("rtimeR"),
+                 uiOutput("mass0"),
+                 uiOutput("N_atom"),
+               uiOutput("mzd"),
+                uiOutput("labelThreshold"),
+                 uiOutput("selectedFragment"),
+               actionButton("saveTotable","save to table"),
+               actionButton("undoButton","undo modification"),
+               #uiOutput("selectedFragment2"),
+                hr(),
+                actionButton("refreshInputsButton","Refresh Inputs")
+               
+                
+                #                  shinyjs::hidden(uiOutput("LB")),
+                #  shinyjs::hidden(uiOutput("RB")),hr(),
+                #  shinyjs::hidden(uiOutput("rtime")),hr(),
+                #  shinyjs::hidden(uiOutput("rtimeL")),
+                # shinyjs::hidden(uiOutput("rtimeR")),
+                #  shinyjs::hidden(uiOutput("mass0")),
+                #  shinyjs::hidden(uiOutput("N_atom")),
+                # shinyjs::hidden(uiOutput("mzd")),
+                # 
+                
+                #                 uiOutput("LB"),
+                #  uiOutput("RB"),hr(),
+                #  uiOutput("rtime"),hr(),
+                #  uiOutput("rtimeL"),
+                # uiOutput("rtimeR"),
+                #  uiOutput("mass0"),
+                #  uiOutput("N_atom"),
+                # shinyjs::hidden(uiOutput("mzd")),
+    
+
+      # Input: Selector for choosing dataset ----
+       # sliderInput("RTrange", "Range:",
+       #            min = min(rawData1()()@featureData@data$retentionTime), max = max(rawData1()()@featureData@data$retentionTime),
+       #            value = c(min(rawData1()()@featureData@data$retentionTime),max(rawData1()()@featureData@data$retentionTime)))
+      
+    ),
+      #Split layout
+#       splitLayout(
+#   plotOutput("tic"),
+#   plotOutput("SIM")
+# ),
+
+    # Main panel for displaying outputs ----
+    mainPanel(
+    
+      fluidRow(column(3,checkboxGroupInput("savePlots",NULL, list("TIC", "SIM", "MSpectrum"),inline = T)), column(1, actionButton("savePlotsButton", "Save active plots"))
+  ), intCorUI("intCor"),
+      # checkboxGroupInput("savePlots",NULL, list("TIC", "SIM", "MSpectrum"),inline = T), actionButton("savePlotsButton", "Save plots"),
+  
+      # fluidRow(splitLayout(cellWidths = c("50%", "50%"), 
+      #                      plotOutput("tic"), 
+      #                      plotOutput("SIM"))),
+
+      # Output: Verbatim text for data summary ----
+      #verbatimTextOutput("summary"),
+      
+      # Output: HTML table with requested number of observations ----
+      tabsetPanel(id = "tabs",
+        # The splitLayout(cellWidths = c("50%", "50%") render blurred plots (half of them)
+        # tabPanel("TIC", 
+        #           fluidRow(splitLayout(cellWidths = c("50%", "50%"), uiOutput('myTicsA'),uiOutput('myTicsB'))))
+        
+        tabPanel("TIC",id = "TIC", fluidRow(column(6, uiOutput('myTicsA')), column(6, uiOutput('myTicsB')))),
+#, actionButton("savePlotsButton", "Save plots")
+        tabPanel("MSpectrum",id = "MSpectrum", fluidRow(column(6, uiOutput('MSpecA')), column(6, uiOutput('MSpecB')))),
+
+        tabPanel("SIM",id = "SIM", fluidRow(column(6, uiOutput('SIMA')), column(6, uiOutput('SIMB')))),
+
+        tabPanel("Parameters",id = "Parameters", fluidRow(column(5, rHandsontableOutput('hot'), DT::dataTableOutput("table")), column(2, shinyjs::hidden(numericInput("mzd2","Mass difference",value = 0.3)),  shinyjs::hidden(checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isotopeCorrection", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isotopeCorrection"))), actionButton("saveButton", "Save"),  shinyjs::hidden(actionButton("runButton", "Save & Run"))) ))
+
+        # tabPanel("Parameters",id = "Parameters", fluidRow(column(5, rHandsontableOutput('hot')), column(2,  shinyjs::hidden(actionButton("saveButton", "Save file")),  shinyjs::hidden(actionButton("runButton", "Run"))), column(2,  shinyjs::hidden(numericInput("mzd2","mass difference",value = 0.3)),  shinyjs::hidden(checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isoCor", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isoCor"))))))
+
+        
+      ), 
+# fluidRow(
+#          column(4,  shinyjs::hidden(numericInput("mzd2","mass difference",value = 0.3)),  shinyjs::hidden(checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isoCor", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isoCor"))))
+#          ),
+
+      # Dynamic tab generation
+       verbatimTextOutput("debug") #, uiOutput('mytabs')
+      # tabsetPanel(type = "tabs",
+      #            
+      #             sapply(rep(paste0("tabPanel('", "rawData", 1:8,"')")), function(x) eval(parse(text=x)))
+                  #rlang::parse_exprs(rep(paste0("tabPanel('", "rawData", 1:8,"')")))
+                  #eval(parse(text=(rep(paste0("tabPanel('", "rawData", 1:8,"')")))))
+                  #tabPanel('rawData1'), tabPanel('rawData')
+                  #parse(text=(rep(paste0("tabPanel('", "rawData", 1:8,"')",collapse = ";"))))
+                  
+                  #tabPanel('rawData1'),tabPanel('rawData'),tabPanel('rawData3'),tabPanel('rawData4'),tabPanel('rawData5'),tabPanel('rawData6'),tabPanel('rawData7'),tabPanel('rawData8')
+                  # parse(text=(rep(paste0("tabPanel('", "rawData", 1:8,"', plotOutput('tic",1:8,"'))",collapse = ";")))) %>% eval()
+#      ) # parenthesis of tabsetPanel
+      # length(rawData())
+      # rep(paste0("tabPanel('", "rawaData", 1:length(rawData),"', plotOutput('tic",1:length(rawData),"'),","plotOutput('SIM'),", "plotOutput('MSpectrum'))",collapse = ","))
+                  
+       # plotOutput("tic"), plotOutput("SIM"), plotOutput("MSpectrum"), dataTableOutput("table"), verbatimTextOutput("debug"),verbatimTextOutput("netcdfPath") #
+
+    )
+  )
+)
+
+
+server <- function(input, output,session) {
+  
+  options(shiny.reactlog=TRUE)
+  shinyOptions(cache = memoryCache(max_size = 300e6))
+  options(stringsAsFactors=FALSE)
+  # plan(multiprocess)
+  # onStop(function(state) plan(sequential))
+  # 
+  # options(future.globals.maxSize = 629145600) # calculator for an 600 mb limit : 600*1024^2 = 891289600 
+  # 
+   # handlers("progress", "beepr")
+  #setBookmarkExclude(c("x", "y"))
+
+  # shiny::onStop(parallel::stopCluster(cl))
+
+  #status <- reactiveVal()
+  
+  
+  # observeEvent(DF(), {
+  #  finalDF4 <- isolate(values[["DF"]])
+  #   updateSelectInput()
+  #   updateNumericInput()
+  #   updateNumericInput()
+  #   updateNumericInput()
+  #   updateNumericInput()
+  # })
+
+
+
+
+    # cleanup <- reactiveValues(val = NULL)
+    # 
+    # onStart <- function() {
+    #   cleanup$val <- FALSE
+    # }
+    # 
+    #   onStop(function() {
+    #     cleanup$val <- TRUE
+    #   })
+      
+  
+    
+#   observe({
+#   reactiveValuesToList(input)
+#   session$doBookmark()
+# })
+#   
+  # onBookmark(function(state) {
+  #   # Save content to a file
+  #       state$values$tmp <- values[["DF"]]
+  #   
+  # })
+  # 
+  # onRestore(function(state) {
+  #   values <- reactiveValues(DF= state$values$tmp)
+  # })
+   # 
+   #    onSessionEnded(function(url) {
+   #      updateQueryString(url)
+   #    })
+   # 
+   # observeEvent(req(input$folderButton , input$fileButton == 1),   {
+   #   browser()
+   #   session$doBookmark()
+   #   session$reload()
+   #   }, priority = 1,ignoreInit = T)
+   #
+  
+
+  
+  
+  #   dir <- reactiveValues(val = NULL)
+  # 
+  # observeEvent(input$folderButton, {
+  # 
+  #   # if (input$folderButton == 0 ) {
+  #   # session$reload()
+  #   # }
+  # 
+  #   dir$val <-    tryCatch(easycsv::choose_dir(),
+  #   warning = function(cond) {message(); return(NULL)},
+  #   error = function(cond) {message(); return(NULL)}
+  #   )
+  # 
+  # 
+  # 
+  # },ignoreNULL = T,ignoreInit = T)
+  
+  dir <- eventReactive(input$folderButton, {
+
+    # # output[[paste0("tic",i)]]
+    # if (length(rawData()) >= 1) {
+    #   output[["tic1"]] <- NULL
+    #   output[["tic2"]] <- NULL
+    #   gc()
+    # }
+
+
+    #browser()
+   tryCatch(easycsv::choose_dir(),
+    warning = function(cond) {message(); return(NULL)},
+    error = function(cond) {message(); return(NULL)}
+    )
+
+  }, label = "dir")
+
+  # observeEvent(input$saveButton, {
+  #   xlsx::write.xlsx(ParameterFile.tbl(), file = paramFile())
+  #    showNotification("Saved !")
+  # })
+
+#   
+#     output$netcdfPath <- renderText({
+#     dir()
+#   })
+#    
+
+  # rawDataR <- reactiveValues()
+  # rawDataR$val3 <- readMSData(mixedsort(netCDFs), mode = "onDisk", msLevel. = 1) %>% as("data.frame")
+  # h <- reactiveValuesToList(rawDataR)
+
+  # Loading files ...
+  
+#     rawData <- reactive({
+#     
+#    # browser()
+# # req(input$fileButton != 0)
+#    # if (!is.null(dir())) {
+# 
+#       progressr::withProgressShiny()
+#     progress <- AsyncProgress$new(session, min=1, max=15)
+# 
+# netCDFs <- list.files(paste0(dir(),"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T)
+# j = 0
+# tmp <- future_lapply(seq_along(netCDFs), function(i) {
+#          j <- i
+# progress$set(value = j+1)
+#     data <- readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
+#   df <- as(data,  "data.frame")
+#   df$phenoData <- data@phenoData %>% rownames()
+#   df
+#     })
+# 
+#       progress$close()
+# 
+# tmp
+# #} else { isolate(dir())}
+# 
+# })
+#   
+  
+#     rawData <- reactive({
+# 
+#    # browser()
+# # req(input$fileButton != 0)
+#    # if (!is.null(dir())) {
+#   withProgressShiny(message = 'Extracting data ...', value = 0, {
+# 
+# netCDFs <- list.files(paste0(dir(),"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T)
+# 
+# p <- progressor(along = netCDFs)
+# 
+# tmp <- future_lapply(seq_along(netCDFs), function(i) {
+# p()
+# 
+#   data <- readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
+#   df <- as(data,  "data.frame")
+#   df$phenoData <- data@phenoData %>% rownames()
+#   df
+#     })
+#   })
+#       tmp
+# #} else { isolate(dir())}
+# 
+# })
+  
+  
+  rawData <- reactive({
+
+   # browser()
+# req(input$fileButton != 0)
+   # if (!is.null(dir())) {
+  withProgress(message = 'Loading files ...', value = 0, {
+
+netCDFs <- list.files(paste0(dir(),"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T)
+
+pbmcapply::pbmclapply(seq_along(netCDFs), function(i) {
+
+  incProgress(1/length(netCDFs))
+  data <- readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
+  df <- as(data,  "data.frame") 
+  df$phenoData <- data@phenoData %>% rownames()
+  df
+    })
+  })
+#} else { isolate(dir())}
+
+}, label = "rawData")
+  
+#     rawData <- reactive({
+# 
+# 
+#    # if (!is.null(dir())) {
+#   withProgress(message = 'Loading files ...', value = 0, {
+# 
+# 
+# pbmcapply::pbmclapply(rawData(), function(i) {
+# 
+#   # incProgress(1/length(netCDFs))
+# 
+#    as(i, "data.frame")
+# 
+#     })
+#   })
+# #} else { isolate(dir())}
+# })
+  
+  
+  # output$rawData <- isolate(rawData)
+
+  # # Create multiple tabs: 1 netcdf file per tab.
+  # #   output$mytabs <- renderUI({
+  # #   nTabs = length(rawData())
+  # #   # create tabPanel with datatable in it
+  # #   myTabs = lapply(seq_len(nTabs), function(i) {
+  # #     tabPanel(paste0("file",i),
+  # #       plotOutput(paste0("tic",i)),
+  # #       #plotOutput(paste0("MSpectrum",i))
+  # #              )
+  # #     })
+  # # 
+  # #   do.call(tabsetPanel, myTabs)
+  # # })
+  # # plot(chromatogram(rawData()[[1]],c(input$LB,input$RB)))
+  
+
+  
+  
+    output$selectedFragment <- renderUI({
+    #browser()
+      req(input$folderButton != 0 & input$fileButton != 0)
+     # req(input$tabs == "SIM" | input$tabs == "MSpectrum" | input$tabs == "TIC" | input$tabs == "Parameters")
+      
+      
+      # if (isTRUE(input$tabs == "TIC")) {
+        
+        selectInput('selectedFragment', 'Fragments', isolate(c("TIC", values[["DF"]][[1]])), multiple=F, selectize=TRUE)
+
+      # } else {
+      #   
+      #   selectInput('selectedFragment', 'Fragments', values[["DF"]][[1]], multiple=F, selectize=TRUE)
+      # }
+      
+    })
+    
+    # prev_selectedFragment_val <- reactiveValues(val = NULL)
+    #   prev_selectedFragment_val$val <- c(tail(prev_selectedFragment_val$val, 1), input$selectedFragment)
+
+    
+    
+    observeEvent({input$tabs == "MSpectrum" | input$tabs == "SIM" | input$tabs == "Parameters"}, {
+      
+         updateSelectInput(session, "selectedFragment",
+      label = "",
+      choices =  c("TIC", values[["DF"]][[1]]),
+      selected = values[["DF"]][[1]][[1]]
+       )
+}, once = T,ignoreInit = T, label = "updateSelectInput")
+
+    
+    # observe({
+    #   
+    #    if (!isTRUE(input$tabs == "TIC")) {
+    #  x <- values[["DF"]][[1]]
+    #   
+    #    updateSelectInput(session, "selectedFragment",
+    #   label = "",
+    #   choices = x,
+    #   selected = prev_selectedFragment_val[["val"]][[1]]
+    #    )
+    #    }
+    # })
+    
+    #     output$selectedFragment2 <- renderUI({
+    #   
+    #   req(input$folderButton != 0 & input$fileButton != 0)
+    #   req(input$tabs == "MSpectrum")
+    #   
+    #   a <- values[["DF"]]
+    #   a$RT <- factor(a$RT, levels=unique(a$RT)) # addding factors to prevent sorting when grouping (i.e: sorts by the factors)
+    #   b <- a %>% group_by(RT) %>% group_map(~gsub(" .*","",.x[[1]][[1]])) %>% sapply(rbind)
+    #   c <- a  %>% group_keys(RT) %>% .$RT
+    #   fragments <- paste0(b," @", c)
+    #     
+    #     selectInput('selectedFragment2', 'Fragments', fragments, multiple=F, selectize=TRUE)
+    # 
+    #   
+    #   
+    # })
+    
+# is.even <- function(x) {(length(x) %% 2) == 0}
+
+ 
+    output$myTicsA <- renderUI({
+      req(plots())
+
+      if (length(rawData()) != 1 && input$tabs == "TIC") {
+#browser()
+          lapply(seq_len(length(rawData())/2), function(i) {
+
+        plotOutput(paste0("tic",i,"_f",input$folderButton)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+            
+      })
+        
+      
+      } else {
+      plotOutput(paste0("tic",1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+
+    }
+  })
+    # TESTER SI JE RETIRE TOUYS LES myTicsA CA DEVRAIT MARCHER NORMALEMENT
+
+    output$myTicsB <- renderUI({
+      req(plots())
+    # browser()
+    # create tabPanel with datatable in it
+      if (length(rawData()) != 1 && input$tabs == "TIC") {
+        lapply((length(rawData())/2+1):length(rawData()), function(i) {
+
+        plotOutput(paste0("tic",i,"_f",input$folderButton)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        #plotOutput(paste0("MSpectrum",i))
+
+      })
+    }
+
+     # do.call(mainPanel, myTics)
+  })
+
+   
+
+  output$rtime <- renderUI({
+  #  browser()
+    req(input$folderButton != 0 , input$fileButton != 0, input$tabs == "MSpectrum")
+    
+    numericInput(inputId = "rtime",
+                   label = "Retention time",
+                   #min = min(rawData1()@featureData@data$retentionTime),
+                   #max = max(rawData1()@featureData@data$retentionTime),
+                   #value = rows(paramFileTable(),paramFileTable()[[1]] == input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
+                   value = (rows(paramFileTable(), paramFileTable()[[1]] == input$selectedFragment)[[2]] + rows(paramFileTable(), paramFileTable()[[1]] == input$selectedFragment)[[3]])/2, # to be used with input$selectedFragment2: as.numeric(gsub(".*@",replacement = "", input$selectedFragment2)),
+                   step = 0.1)
+  })
+
+  
+    output$rtimeL <- renderUI({
+   # browser()
+    req(input$folderButton != 0, input$fileButton != 0, input$tabs == "TIC" | input$tabs == "SIM" | input$tabs == "Parameters")
+
+        if (input$selectedFragment == "TIC" && input$tabs == "TIC") {
+
+                  numericInput(inputId = "rtimeL",
+                   label = "Retention time (left)",
+                   #min = min(rawData1()@featureData@data$retentionTime),
+                   #max = max(rawData1()@featureData@data$retentionTime),
+                   value = tryCatch(round(min(rawData()[[1]]$rt)/60), error = function(cond) {message(); return(NULL)}), # max(rawData1()@featureData@data$retentionTime)/2-10,
+                   step = 0.1)
+          
+        } else { if (input$selectedFragment != "TIC") {
+            
+                  numericInput(inputId = "rtimeL",
+                   label = "Retention time (left)",
+                   #min = min(rawData1()@featureData@data$retentionTime),
+                   #max = max(rawData1()@featureData@data$retentionTime),
+                   value = rows(paramFileTable(), paramFileTable()[[1]] == input$selectedFragment)[[2]], # max(rawData1()@featureData@data$retentionTime)/2-10,
+                   step = 0.1)
+            
+        }
+        }
+  })
+
+  output$rtimeR <- renderUI({
+    
+   # browser()
+    req(input$folderButton != 0 , input$fileButton != 0, input$tabs == "TIC" | input$tabs == "SIM" | input$tabs == "Parameters")
+
+            if (isTRUE(input$selectedFragment == "TIC" && input$tabs == "TIC")) {
+              
+              
+      numericInput(inputId = "rtimeR",
+                   label = "Retention time (right)",
+                   #min = min(rawData1()@featureData@data$retentionTime),
+                   #max = max(rawData1()@featureData@data$retentionTime),
+                   value = tryCatch(round(max(rawData()[[1]]$rt)/60), error = function(cond) {message(); return(NULL)}), # max(rawData1()@featureData@data$retentionTime)/2+10,
+                   step = 0.1)
+              
+            } else { if (input$selectedFragment != "TIC") {
+              
+      numericInput(inputId = "rtimeR",
+                   label = "Retention time (right)",
+                   #min = min(rawData1()@featureData@data$retentionTime),
+                   #max = max(rawData1()@featureData@data$retentionTime),
+                   value = rows(paramFileTable(), paramFileTable()[[1]] == input$selectedFragment)[[3]],# max(rawData1()@featureData@data$retentionTime)/2+10,
+                   step = 0.1)
+              
+            }
+            }
+  })
+  
+  
+
+  
+  output$mass0 <- renderUI({
+    
+    req(input$folderButton != 0,  input$fileButton != 0, input$tabs == "SIM" | input$tabs == "Parameters")
+    
+      numericInput(inputId = "mass0",
+                   label = "mass0 (M0)",
+                   #min = 40,
+                   #max = 600,
+                   value = rows(paramFileTable(),paramFileTable()[[1]] == input$selectedFragment)[[4]],
+                   step = 1
+                   )
+  })
+
+    output$N_atom <- renderUI({
+      
+      req(input$folderButton != 0 & input$fileButton != 0, input$tabs == "SIM" | input$tabs == "Parameters")
+      
+      numericInput(inputId = "N_atom",
+                   label = "Number of isotopomers",
+                   #min = 1,
+                   #max = 10,
+                   value = rows(paramFileTable(),paramFileTable()[[1]] == input$selectedFragment)[[5]],
+                   step = 1
+                   )
+  })
+  
+    
+  output$mzd <- renderUI({
+    
+      req(input$folderButton != 0 & input$fileButton != 0, input$tabs == "SIM" | input$tabs == "Parameters")
+
+    
+      numericInput(inputId = "mzd",
+                   label = "Mass difference",
+                   #min = 0,
+                   #max = 1,
+                   value = {if (input$selectedFragment == "TIC") {NULL} else {0.3}},
+                   step = 0.1
+                   )
+  })
+  
+  output$labelThreshold <- renderUI({
+    
+    req(input$folderButton != 0, input$fileButton != 0, input$tabs == "MSpectrum")
+    
+      numericInput(inputId = "labelThreshold",
+                   label = "Threshold intensity for labels",
+                   #min = 0,
+                   #max = 1,
+                   value = {if (input$selectedFragment == "TIC") {NULL} else {10}},
+                   step = 5
+                   )
+  })
+
+
+
+
+
+
+observe({
+
+  req(plots())
+# browser()
+  
+
+#         if (input$tabs == "TIC") {
+           
+ 
+     lapply(seq_along(rawData()), function(i) {
+       
+#browser()
+    
+          output[[paste0("tic",i,"_f",input$folderButton)]] <- renderPlot({
+
+        plots()[[i]] # TICplots
+
+      })
+     })
+#         }
+},label = "renderPlots")
+           
+   
+plots <- reactive({
+
+  #browser()
+
+  if (input$tabs == "TIC") {
+
+    
+  req(input$rtimeL,input$rtimeR)
+
+lapply(seq_along(rawData()), function(i) {
+
+
+
+
+     intensity <- rawData()[[i]] %>% group_split(rt) %>% sapply(FUN = function(x) sum(x$i))
+    rtime2 <- unique(rawData()[[i]]$rt)
+    dataIndexL <- MALDIquant::match.closest(input$rtimeL*60,rtime2)
+    dataIndexR <- MALDIquant::match.closest(input$rtimeR*60,rtime2)
+
+
+   lattice::xyplot(intensity[dataIndexL:dataIndexR]~(rtime2[dataIndexL:dataIndexR])/60, type="l", xlab="Retention time (min)", ylab= "Intensity", main= paste0("TIC_",unique(rawData()[[i]]$phenoData)), col="black", scales= list(tck=c(1,0))
+)
+
+})
+  }
+
+},label = "plots")
+  
+     
+    output$debug <- renderText({
+      c("You have selected", "folder:",input$folderButton, "file:",input$folderButton, "rtimeL:",input$rtimeL, "rtimeR:",input$rtimeR, input$selectedFragment, input$tabs,input$runParameters,input$mzd2, input$rtime,"len rawData():", length(rawData()),"len plots():", length(plots()), "hot_select", input$hot_select) #input$mass0,input$rtimeL, input$N_atom,input$rtimeR,input$mzd
+
+    })
+
+
+  
+  
+
+    paramFile <- eventReactive(input$fileButton, {
+      # stopifnot(is.null(input$fileButton))
+    tryCatch(file.choose(),
+    error = function(cond) {message("Warning: file choice cancelled");return(NULL)})
+      
+  })
+    
+
+    values <- reactiveValues(DF = NULL)
+    values2 <- reactiveValues(DF = NULL)
+
+
+    # DATATABLE
+  # observeEvent({
+  #   input$fileButton | input$saveTotable}, {
+  # 
+  # 
+  #   if(!is.null(paramFile())) {
+  # 
+  #    values[["DF"]] <- openxlsx::read.xlsx(paramFile(),sheet = 1, rowNames = FALSE) #,.name_repair="minimal"
+  #    
+  #   }
+  #   
+  #     output$table <- DT::renderDataTable({
+  #   #browser()
+  # 
+  #    values[["DF"]]
+  #   
+  # })
+  # 
+  # })
+  
+# RHANDSONTABLE
+  
+    observeEvent({input$fileButton | input$saveTotable}, {
+
+
+    if(!is.null(paramFile())) {
+
+     values[["DF"]] <- openxlsx::read.xlsx(paramFile(),sheet = 1) #,.name_repair="minimal"
+     
+    }
+    
+        output$hot <- renderRHandsontable({
+        DF  <- values[["DF"]]
+          rhandsontable(DF,columnSorting = TRUE, selectCallback = T)
+})
+    
+  })
+    
+    
+  # selection_val  <- reactiveValues()
+  # selection_rowI  <- reactiveValues()
+  # selection_colI  <- reactiveValues()
+  # 
+  # observeEvent({input$hot_select},{
+  #   browser()
+  # 
+  #  selection_colI <- input$hot_select$select$r
+  #  selection_rowI <- input$hot_select$select$c
+  #  selection <- input$hot_select$data[[selection_rowI]][[selection_colI]]
+  #  
+  # })
+
+    observeEvent(input$undoButton,{
+    browser()
+ 
+    output$hot <- renderRHandsontable({
+        DF  <- isolate(values2[["DF"]])
+          rhandsontable(DF,columnSorting = TRUE, selectCallback =F)
+})
+   
+  })
+    
+ #        observe({
+ #    browser()
+ # 
+ # values2[["DF"]] <- values[["DF"]]
+ #   
+ #  })
+    
+   
+
+
+  #  undo = TRUE, redo = TRUE, 
+  # output$saveTotable <- renderUI({
+  # 
+  #   actionButton("saveTotabe", "Save to table")
+  # })
+
+  observeEvent(input$saveTotable , {
+
+   # browser()
+    DF <- isolate(values[["DF"]])
+
+DF[DF[1] == input$selectedFragment, 2] <- input$rtimeL
+DF[DF[1] == input$selectedFragment, 3] <- input$rtimeR
+#DF[DF[1] == input$selectedFragment, 4] <- input$mass0
+#DF[DF[1] == input$selectedFragment, 5] <- input$N_atom
+
+    openxlsx::write.xlsx(DF, file = paramFile(), rowNames = F, keepNA = F)
+
+    showNotification("Saved !")
+
+  })
+  
+
+    observeEvent(input$hot, {
+      
+    output$hot <- renderRHandsontable({
+
+
+# expected_header <- c("name", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
+# browser()
+#     validate(
+#     if (isTRUE(all.equal(expected_header, gsub("\\.\\.\\..*","",colnames(values[["DF"]]))[1:6]))) {
+#          NULL
+#     } else {
+#         "Error: the parameterFile is not properly formatted."
+#        }
+#     )
+      browser()
+
+    DF = NULL
+
+
+    if (!is.null(input$hot)) {
+      DF = hot_to_r(input$hot)
+      values[["DF"]] = DF
+    } else if (!is.null(values[["DF"]])) {
+      DF = values[["DF"]]
+    }
+
+    if (!is.null(DF)) {
+      rhandsontable(DF,columnSorting = TRUE, selectCallback = T)
+    }
+  })
+})
+  
+  # undo = TRUE,redo = TRUE,
+    
+  
+  #refreshInputsButton, input$fileButton
+  # fragments <- eventReactive({
+  #   input$refreshInputsButton
+  #   }, {
+  # 
+  #   finalDF2 <- isolate(values[["DF"]]) # readxl::read_excel(paramFile())
+  #   return(finalDF2[1])
+  # 
+  # })
+  
+  #input$fileButton
+# refreshInputsButton
+  # eventReactive()
+  paramFileTable <- reactive({
+  #  browser()
+    #input$hot
+#input$fileButton
+    
+    #finalDF3 <- isolate(values[["DF"]]) 
+    return(values[["DF"]])
+
+    #     DF = NULL
+    # if (!is.null(input$hot)) {
+    #   DF = hot_to_r(input$hot)
+    #   values[["DF"]] = DF
+    # } else if (!is.null(values[["DF"]])) {
+    #   DF = values[["DF"]]
+    # }
+    #
+    #     if (!is.null(DF))
+    #   rhandsontable(DF)
+    #
+    # finalDF3 <- isolate(values[["DF"]]) #readxl::read_excel(paramFile())
+    # return(finalDF3)
+
+  },label = "paramFileTable")
+  
+   observeEvent(input$saveButton, {
+    
+
+     #browser()
+    finalDF <- isolate(values[["DF"]])
+    #finalDF <- finalDF[-1] # remove the first column (automatic index when importing data)
+    #na.replace(finalDF,"")
+    #replace(finalDF,"#N/A")
+
+    # na.replace(parameterFile," ")
+
+    # xlsx::write.xlsx(finalDF, file = paramFile(),row.names = F,showNA = F) #"/home/mathieu/Documents/Data/MSinco/MSTFA over time/Parameters/ParameterFile.xlsx"
+    openxlsx::write.xlsx(finalDF, file = paramFile(), rowNames = FALSE, keepNA = F)
+
+    showNotification("Saved !")
+
+     
+  })
+  
+
+  
+} # server
+
+test2 %>% group_split(RT) %>% sapply(FUN = function(x) {strsplit("MAL 233",split = " ")[[1]][[1]]})
+test2[[1]] %>% gsub(" .*", "", .) %>% unique()
+
+test2 %>% group_split(RT) %>% group_map(.x[[1]])
+
+test2[[1]] %>% unique(RT)
+shinyApp(ui = ui, server = server)
+
+# runMSinco <- function(input,output,session, pathExperimentFolder, savePlot = TRUE, baselineCorrection=TRUE, isoCor = TRUE, mzd= 0.3) {
+#   
+#   pathExperimentFolder <- dir()
+#   
+# }
+
+a <- test2 %>% group_by(RT) %>% group_map(~gsub(" .*","",.x[[1]][[1]])) %>% sapply(rbind)
+b <- test2 %>% group_keys(RT) %>% .$RT
+c <- paste0(a," @", b)
+
+
+
+
+#%>% paste0("@", group_keys(test2$RT) )
+
+test2 %>% split.data.frame(RT)
+  
+unique(test$RT)
+shinyApp(ui = ui, server = server,enableBookmarking = "server")
+#,options = c(display.mode = "showcase")
+  
+    # options(shiny.reactlog=TRUE)
+
+
+length(list.files("/home/mathieu/Documents/Data/MSinco/MSTFA over time/Netcdfs",full.names = TRUE, pattern = ".CDF$", ignore.case = TRUE))
+
+test2 <- read_excel("/home/mathieu/Documents/MSinco\ demo/MSinco\ demo/Parameters/ParameterFile.xlsx")
+
+```
