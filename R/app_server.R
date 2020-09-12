@@ -1530,14 +1530,14 @@ app_server <- function( input, output, session ) {
         
       }
       # browser()
-    splitPlots <- findInterval(length(plots_tic)/2, seq_len(length(plots_tic)), all.inside = T)
+    splitIndex <- findInterval(length(plots_tic)/2, seq_len(length(plots_tic)), all.inside = T)
     # cat(format(Sys.time(), "%X"))
     
     output$plots_ticA <- renderUI({
       # browser()
       #req(TICplots())
       # req(values[["rawData"]])
-      plots_ticA <-  lapply(seq_len(splitPlots), function(i) {
+      plots_ticA <-  lapply(seq_len(splitIndex), function(i) {
         
         plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
       })
@@ -1549,7 +1549,7 @@ app_server <- function( input, output, session ) {
       #   req(TICplots())
       req(length(plots_tic) > 1)
       # create tabPanel with datatable in it
-      plots_ticB <- lapply((splitPlots+1):length(plots_tic), function(i) {
+      plots_ticB <- lapply((splitIndex+1):length(plots_tic), function(i) {
         
         plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
@@ -1689,7 +1689,7 @@ app_server <- function( input, output, session ) {
       # create tabPanel with datatable in it
      lapply(seq_len(values[["plotIndex"]]), function(i) {
         
-        plotOutput(paste0("mspec",i, "_f", values[["runNo"]], input$run2),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]], input$run2)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("mspec",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -1702,7 +1702,7 @@ app_server <- function( input, output, session ) {
       # create tabPanel with datatable in it
       lapply((values[["plotIndex"]]+1):length(values[["rawData"]]), function(i) {
         
-        plotOutput(paste0("mspec",i, "_f", values[["runNo"]], input$run2),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]], input$run2)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("mspec",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
