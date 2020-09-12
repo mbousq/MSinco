@@ -23,12 +23,13 @@ app_ui <- function(request) {
       # tags$title("MSinco"),
       id= "navbar",
       selected = "Settings",
+      shinyjs::useShinyjs(),
       # tags$head(tags$style(HTML(
       #   "#navbar > li:first-child { display: none; }"
       # ))),
                # selected = "home" ,
       # fluidRow( div(style="display:inline-block;",h3("MSinco")), actionButton('newDirButton', 'Create directory'),actionButton('importDirButton', 'Import directory'), actionButton('go', 'go')), hr(),
-      # shinyjs::useShinyjs(), 
+      # shinyjs::useShinyjs(),
       # tags$style(".shiny-file-input-progress {display: none}"),
 
 
@@ -52,8 +53,9 @@ app_ui <- function(request) {
                    # actionButton('fileButton', 'Parameter file',width = "49%"), actionButton("folderButton", "Netcdfs folder",width = "49%"), br(), 
                    # uiOutput("LB"),
                    # uiOutput("RB"), # hr(),
-
-                   uiOutput("selectedFiles"),
+                   h5("*Parameters*"),
+                   shinyjs::hidden(uiOutput("selectedFragment")),
+                   # uiOutput("selectedFiles"),
                    uiOutput("rtime"), # hr(),
                    uiOutput("labelThreshold"),
                    uiOutput("rtimeL"),
@@ -61,16 +63,18 @@ app_ui <- function(request) {
                    uiOutput("mass0"),
                    uiOutput("N_atom"),
                    uiOutput("mzd"),
-                   uiOutput("selectedFragment"),
+                   # uiOutput("selectedFragment"),
+                   
+                   
                    # # uiOutput("selectedFragment_tic"),
-                   uiOutput("saveActivePlotsButton"),
-                   uiOutput("saveTotableButton"),
+                   # uiOutput("saveActivePlotsButton"),
+                   # uiOutput("saveTotableButton"),
                    # uiOutput("runButton"),
-                   uiOutput("undoButton"),
+                   # uiOutput("undoButton"),
                    # uiOutput("runButton"),
-                   uiOutput("run1"),
-                   uiOutput("run2"),
-                   uiOutput("run3"),
+                   # uiOutput("run1"),
+                   # uiOutput("run2"),
+                   # uiOutput("run3"),
                    # uiOutput("msUI"),
                    # uiOutput("ticUI"),
                    # uiOutput("simUI"),
@@ -105,136 +109,144 @@ app_ui <- function(request) {
                    #   uiOutput("paramUI"),
                    # ),
 
-                #    conditionalPanel(
-                #      'input.tabs === "TIC"',
-                #      numericInput(inputId = "rtimeL",
-                #                   label = "Retention time (left)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value = NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
-                #                   step = 0.1),
-                #      
-                #      numericInput(inputId = "rtimeR",
-                #                   label = "Retention time (right)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
-                #                   step = 0.1),
-                #      
-                #      actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                #      actionButton("run1", "run", width = "100%", style="margin-bottom:8px")
-                #      
-                #                         ),
-                #    conditionalPanel(
-                #      'input.tabs === "MSpectrum"',
-                # 
-                #      numericInput(inputId = "labelThreshold",
-                #                   label = "Threshold intensity for labels",
-                #                   #min = 0,
-                #                   #max = 1,
-                #                   value = NULL,
-                #                   step = 5
-                #      ),
-                #      
-                #      numericInput("rtime", label = "retention time",
-                #                         #min = min(rawData1()@featureData@data$retentionTime),
-                #                         #max = max(rawData1()@featureData@data$retentionTime),
-                #                         #value = rows(values[["DF"]],values[["DF"]][[1]] ==input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
-                #                         value = NULL),
-                #                           
-                #      actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                #      actionButton("run2", "run", width = "100%", style="margin-bottom:8px")
-                #      
-                #    ),
-                #    conditionalPanel(
-                #      'input.tabs === "SIM"',
-                # 
-                #      numericInput(inputId = "rtimeL",
-                #                   label = "Retention time (left)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value =NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
-                #                   step = 0.1),
-                #      
-                #      numericInput(inputId = "rtimeR",
-                #                   label = "Retention time (right)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
-                #                   step = 0.1),
-                #      numericInput(inputId = "mass0",
-                #                   label = "mass0 (M0)",
-                #                   #min = 40,
-                #                   #max = 600,
-                #                   value = NULL,
-                #                   step = 1
-                #      ),
-                #      
-                #      
-                #      numericInput(inputId = "N_atom",
-                #                   label = "Number of isotopomers",
-                #                   #min = 1,
-                #                   #max = 10,
-                #                   value = NULL,
-                #                   step = 1
-                #      ),
-                #      
-                #      numericInput(inputId = "mzd",
-                #                   label = "Mass difference",
-                #                   #min = 0,
-                #                   #max = 1,
-                #                   value = NULL,
-                #                   step = 0.1),
-                #                   
-                #                   actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                #      actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
-                #      actionButton("run3", "run", width = "100%", style="margin-bottom:8px")
-                #      
-                #      
-                #                         ),
+                   conditionalPanel(
+                     'input.tabs === "TIC" && output.selectedFragment',
+                     # shinyjs::hidden(uiOutput("selectedFragment")),
+                     # numericInput(inputId = "rtimeL",
+                     #              label = "Retention time (left)",
+                     #              #min = min(rawData1()@featureData@data$retentionTime),
+                     #              #max = max(rawData1()@featureData@data$retentionTime),
+                     #              value = NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
+                     #              step = 0.1),
+                     # 
+                     # numericInput(inputId = "rtimeR",
+                     #              label = "Retention time (right)",
+                     #              #min = min(rawData1()@featureData@data$retentionTime),
+                     #              #max = max(rawData1()@featureData@data$retentionTime),
+                     #              value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
+                     #              step = 0.1),
+
+                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
+                     actionButton("run1", "run", width = "100%", style="margin-bottom:8px")
+
+                                        ),
+                   conditionalPanel(
+                     'input.tabs === "MSpectrum" && output.selectedFragment',
+                     # numericInput(inputId = "labelThreshold",
+                     #              label = "Threshold intensity for labels",
+                     #              #min = 0,
+                     #              #max = 1,
+                     #              value = NULL,
+                     #              step = 5
+                     # ),
+                     # 
+                     # numericInput("rtime", label = "retention time",
+                     #                    #min = min(rawData1()@featureData@data$retentionTime),
+                     #                    #max = max(rawData1()@featureData@data$retentionTime),
+                     #                    #value = rows(values[["DF"]],values[["DF"]][[1]] ==input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
+                     #                    value = NULL),
+
+                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
+                     actionButton("run2", "run", width = "100%", style="margin-bottom:8px")
+
+                   ),
+                   conditionalPanel(
+                     'input.tabs === "SIM" && output.selectedFragment',
+                     # numericInput(inputId = "rtimeL",
+                     #              label = "Retention time (left)",
+                     #              #min = min(rawData1()@featureData@data$retentionTime),
+                     #              #max = max(rawData1()@featureData@data$retentionTime),
+                     #              value =NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
+                     #              step = 0.1),
+                     # 
+                     # numericInput(inputId = "rtimeR",
+                     #              label = "Retention time (right)",
+                     #              #min = min(rawData1()@featureData@data$retentionTime),
+                     #              #max = max(rawData1()@featureData@data$retentionTime),
+                     #              value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
+                     #              step = 0.1),
+                     # numericInput(inputId = "mass0",
+                     #              label = "mass0 (M0)",
+                     #              #min = 40,
+                     #              #max = 600,
+                     #              value = NULL,
+                     #              step = 1
+                     # ),
+                     # 
+                     # 
+                     # numericInput(inputId = "N_atom",
+                     #              label = "Number of isotopomers",
+                     #              #min = 1,
+                     #              #max = 10,
+                     #              value = NULL,
+                     #              step = 1
+                     # ),
+                     # 
+                     # numericInput(inputId = "mzd",
+                     #              label = "Mass difference",
+                     #              #min = 0,
+                     #              #max = 1,
+                     #              value = NULL,
+                     #              step = 0.1),
+
+                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
+                     actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
+                     actionButton("run3", "run", width = "100%", style="margin-bottom:8px")
+
+
+                                        ),
                 #    conditionalPanel(
                 #      'input.tabs === "Parameters"',
-                #      
-                #      numericInput(inputId = "rtimeL",
-                #                   label = "Retention time (left)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value =NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
-                #                   step = 0.1),
-                #      
-                #      numericInput(inputId = "rtimeR",
-                #                   label = "Retention time (right)",
-                #                   #min = min(rawData1()@featureData@data$retentionTime),
-                #                   #max = max(rawData1()@featureData@data$retentionTime),
-                #                   value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
-                #                   step = 0.1),
-                #      numericInput(inputId = "mass0",
-                #                   label = "mass0 (M0)",
-                #                   #min = 40,
-                #                   #max = 600,
-                #                   value = NULL,
-                #                   step = 1
-                #      ),
-                #      
-                #      
-                #      numericInput(inputId = "N_atom",
-                #                   label = "Number of isotopomers",
-                #                   #min = 1,
-                #                   #max = 10,
-                #                   value = NULL,
-                #                   step = 1
-                #      ),
-                #      
-                #      numericInput(inputId = "mzd",
-                #                   label = "Mass difference",
-                #                   #min = 0,
-                #                   #max = 1,
-                #                   value = NULL,
-                #                   step = 0.1),
                 # 
-                #      actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
-                #      actionButton("undoButton","undo", width = "100%", style="margin-bottom:8px"),
+                #      numericInput("mzd2","Mass difference",value = 0.3),
+                #      checkboxGroupInput("runParameters", NULL, 
+                #                         list("savePlots", "baselineCorrection", "isotopeCorrection", "correctTracerImpurity"),
+                #                         inline = F,selected = list("savePlots", "baselineCorrection", "isotopeCorrection")), 
+                #      actionButton("saveButton", "Save table", width = "49%", style="margin-bottom:8px"),
+                #      actionButton("undoButton","undo", width = "49%", style="margin-bottom:8px"),
+                #      actionButton("runButton2", "Save table & Run", width = "100%", style="margin-bottom:8px"), 
                 #      
+                #      
+                #      br(),
+                #      # numericInput(inputId = "rtimeL",
+                #      #              label = "Retention time (left)",
+                #      #              #min = min(rawData1()@featureData@data$retentionTime),
+                #      #              #max = max(rawData1()@featureData@data$retentionTime),
+                #      #              value =NULL, # max(rawData1()@featureData@data$retentionTime)/2-10,
+                #      #              step = 0.1),
+                #      # 
+                #      # numericInput(inputId = "rtimeR",
+                #      #              label = "Retention time (right)",
+                #      #              #min = min(rawData1()@featureData@data$retentionTime),
+                #      #              #max = max(rawData1()@featureData@data$retentionTime),
+                #      #              value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
+                #      #              step = 0.1),
+                #      # numericInput(inputId = "mass0",
+                #      #              label = "mass0 (M0)",
+                #      #              #min = 40,
+                #      #              #max = 600,
+                #      #              value = NULL,
+                #      #              step = 1
+                #      # ),
+                #      # 
+                #      # 
+                #      # numericInput(inputId = "N_atom",
+                #      #              label = "Number of isotopomers",
+                #      #              #min = 1,
+                #      #              #max = 10,
+                #      #              value = NULL,
+                #      #              step = 1
+                #      # ),
+                #      # 
+                #      # numericInput(inputId = "mzd",
+                #      #              label = "Mass difference",
+                #      #              #min = 0,
+                #      #              #max = 1,
+                #      #              value = NULL,
+                #      #              step = 0.1),
+                #      # 
+                #      # actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
+                # 
                 # ),
 
                        
@@ -263,10 +275,12 @@ app_ui <- function(request) {
                                
                                tabPanel("MSpectrum", fluidRow(column(6, uiOutput('plots_msA')), column(6, uiOutput('plots_msB')))),
                                
-                               tabPanel("SIM", fluidRow(column(6, uiOutput('plots_simA')), column(6, uiOutput('plots_simB')))),
-                               
-                               tabPanel("Parameters", fluidRow(column(6, rhandsontable::rHandsontableOutput('hot')), column(6, wellPanel(numericInput("mzd2","Mass difference",value = 0.3),  checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isotopeCorrection", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isotopeCorrection")), actionButton("saveButton", "Save"),actionButton("runButton2", "Save & Run"))) ))
-                               
+                               tabPanel("SIM", fluidRow(column(6, uiOutput('plots_simA')), column(6, uiOutput('plots_simB'))))
+                               # ,
+                               # 
+                               # tabPanel("Parameters", fluidRow(column(6, rhandsontable::rHandsontableOutput('hot')) ))
+                               #tabPanel("Parameters", fluidRow(column(6, rhandsontable::rHandsontableOutput('hot')), column(6, wellPanel(numericInput("mzd2","Mass difference",value = 0.3),  checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isotopeCorrection", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isotopeCorrection")), actionButton("saveButton", "Save"),actionButton("runButton2", "Save & Run"))) ))
+
                                # tabPanel("Parameters",id = "Parameters", fluidRow(column(5, rHandsontableOutput('hot')), column(2,  shinyjs::hidden(actionButton("saveButton", "Save file")),  shinyjs::hidden(actionButton("runButton", "Run"))), column(2,  shinyjs::hidden(numericInput("mzd2","mass difference",value = 0.3)),  shinyjs::hidden(checkboxGroupInput("runParameters", NULL, list("savePlots", "baselineCorrection", "isoCor", "correctTracerImpurity"),inline = F,selected = list("savePlots", "baselineCorrection", "isoCor"))))))
                                # 
                                #  rhandsontable::rHandsontableOutput('hot')
@@ -275,6 +289,24 @@ app_ui <- function(request) {
                  )
                )
             ),
+      tabPanel("Parameters",
+               sidebarLayout(
+               sidebarPanel(width = 3,
+                            
+                            numericInput("mzd2","Mass difference",value = 0.3),
+                            checkboxGroupInput("runParameters", NULL, 
+                                               list("savePlots", "baselineCorrection", "isotopeCorrection", "correctTracerImpurity"),
+                                               inline = F,selected = list("savePlots", "baselineCorrection", "isotopeCorrection")), 
+                            actionButton("saveButton", "Save table", width = "49%", style="margin-bottom:8px"),
+                            actionButton("undoButton","undo", width = "49%", style="margin-bottom:8px"),
+                            actionButton("runButton2", "Save table & Run", width = "100%", style="margin-bottom:8px")
+                            
+                            ),
+               mainPanel(
+                         tabPanel("Parameters", fluidRow(column(6, rhandsontable::rHandsontableOutput('hot')) ))
+               )
+               )
+               ),
 
       navbarMenu("Import",
                  tabPanel(title = "Create experiment"),

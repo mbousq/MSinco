@@ -17,10 +17,10 @@ app_server <- function( input, output, session ) {
   onStop(function(state) future::plan("sequential"))
   session$onSessionEnded(stopApp)
   n_undo = 0
-  paramFile_header <- c("name", "rt_left", "rt_right", "Mass0", "LabelAtoms")
-  paramFile_num_header <- c("rt_left", "rt_right", "Mass0", "LabelAtoms")
-  
-  # TODO this is a dirsty hack for direcotry and paramFile
+  paramFile_header <- c("name", "rt_left", "rt_right", "mass_0", "lab_atoms")
+  paramFile_num_header <- c("rt_left", "rt_right", "mass_0", "lab_atoms")
+
+    # TODO this is a dirsty hack for direcotry and paramFile
   values <- reactiveValues()
   values[["DF"]] <- NULL
   values[["lastValues"]] <- NULL
@@ -192,7 +192,7 @@ app_server <- function( input, output, session ) {
     input$navbar
     # input$navbar == "newdir"
   }, {
-    req(input$navbar != "Home", input$navbar != "Settings")
+    # req(input$navbar != "Home", input$navbar != "Settings", input$navbar != "Parameters")
     # browser()
     
     # Import experiment directory PATH
@@ -219,7 +219,13 @@ app_server <- function( input, output, session ) {
       warning = function(cond) {message("Please choose a valid directory"); return(NULL) }
       )
       
+      if (is.null(values[["directory"]])) {
+        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
+        req(FALSE)
+      }
+      
       # Import parameters
+      
       
       values[["paramFile"]] <- paste0(values[["directory"]], "/Parameters/ParameterFile.xlsx")
       
@@ -230,6 +236,7 @@ app_server <- function( input, output, session ) {
         tmp <- openxlsx::read.xlsx(values[["paramFile"]],sheet = 1, cols = 1:5) %>% data.table::setDT() #,.name_repair="minimal"
         
         # expected_header <- c("name", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
+        # 
         
         validate(
           
@@ -320,6 +327,7 @@ app_server <- function( input, output, session ) {
         values[["rawData"]] <- rawData
         values[["rawData_tic"]] <- rawData_tic
         values[["rawData_msnExp"]] <- msnExp
+        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
         
       })
       
@@ -340,10 +348,12 @@ app_server <- function( input, output, session ) {
           )
           
         )
+        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
       }
+      
+      
     }
     # cat(format(Sys.time(), "%X"))
-    updateTabsetPanel(session,inputId = "navbar",selected = "Home")
     
   },ignoreInit = T)
   
@@ -393,24 +403,6 @@ app_server <- function( input, output, session ) {
   # 
   # })
   
-  
-  
-  # 
-  output$selectedFragment <- renderUI({
-    # req(input$tabs)
-    req(values[["rawData"]])
-    # req(input$tabs == "SIM" | input$tabs == "MSpectrum" | input$tabs == "TIC" | input$tabs == "Parameters")
-    
-    # if (isolate(input$tabs) == "TIC") {
-    #
-    selectInput('selectedFragment', 'Fragments', isolate(c("TIC",values[["DF"]][[1]])), multiple= F, selectize=TRUE)
-    #
-    # } else {
-    
-    # selectInput('selectedFragment', 'Fragments', isolate(values[["DF"]][[1]]), multiple= F, selectize=TRUE)
-    
-    # }
-  })
   
   # output$selectedFragment_tic <- renderUI({
   #   # req(input$tabs)
@@ -929,56 +921,104 @@ app_server <- function( input, output, session ) {
   #################################  ##################################  ##################################  ##################################
   
   
-  output$selectedFiles <- renderUI({
+  observeEvent(input$tabs, {
     
-    req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum")
+    switch (input$tabs,
+            "TIC" = {
+              shinyjs::showElement("selectedFragment")
+              },
+            "SIM" = {
+              shinyjs::showElement("selectedFragment")
+              },
+            "MSpectrum" = {
+              shinyjs::showElement("selectedFragment")
+              },
+            "Parameters" = {
+              shinyjs::hideElement("selectedFragment")
+              }
+    )
     
-    selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))    
+    
+  },priority = 2)
+  
+  # 
+  output$selectedFragment <- renderUI({
+    # req(input$tabs)
+    req(values[["rawData"]])
+    
+    tagList(
+      
+    # if (isolate(input$tabs) == "TIC") {
+    selectInput('selectedFragment', 'Fragments', isolate(c("TIC",values[["DF"]][[1]])), multiple= F, selectize=TRUE),
+    selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
+    )
+    #
+    # } else {
+    
+    # selectInput('selectedFragment', 'Fragments', isolate(values[["DF"]][[1]]), multiple= F, selectize=TRUE)
+    
+    # }
   })
   
-  output$saveTotable <- renderUI({
+  
+  # output$selectedFiles <- renderUI({
+  # 
+  #   req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum", values[["rawData"]])
+  # 
+  #   selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
+  # })
+
+  observeEvent(values[["rawData"]], {
     
-    req(input$tabs == "SIM" | input$tabs == "Parameters")
-    
-    actionButton("saveTotable", "Save to table")
-    
+    updateSelectInput(session,"selectedFiles", choices =  names(values[["rawData"]]), selected = names(values[["rawData"]]))
+      
+  
   })
   
-  output$saveActivePlotsButton <- renderUI({
-    
-    req(input$tabs != "Parameters", values[["runNo"]] > 0 )
-    
-    actionButton("saveActivePlotsButton", "Save active plots")
-    
-  })
   
-  output$run1 <- renderUI({
-    
-    req(input$tabs == "TIC", values[["runNo"]] > 0)
-    
-    actionButton("run1", "run", width = "100%", style="margin-bottom:8px")
-    
-  })
+  # output$saveTotable <- renderUI({
+  #   
+  #   req(input$tabs == "SIM" | input$tabs == "Parameters")
+  #   
+  #   actionButton("saveTotable", "Save to table")
+  #   
+  # })
+  # 
+  # output$saveActivePlotsButton <- renderUI({
+  #   
+  #   req(input$tabs != "Parameters", values[["runNo"]] > 0 )
+  #   
+  #   actionButton("saveActivePlotsButton", "Save active plots")
+  #   
+  # })
   
-  output$run2 <- renderUI({
-    
-    req(input$tabs == "MSpectrum")
-    
-    actionButton("run2", "run", width = "100%", style="margin-bottom:8px")
-    
-  })
-  
-  output$run3 <- renderUI({
-    
-    req(input$tabs == "SIM")
-    
-    actionButton("run3", "run", width = "100%", style="margin-bottom:8px")
-    
-  })
+  # output$run1 <- renderUI({
+  #   
+  #   req(input$tabs == "TIC", values[["runNo"]] > 0)
+  #   
+  #   actionButton("run1", "run", width = "100%", style="margin-bottom:8px")
+  #   
+  # })
+  # 
+  # output$run2 <- renderUI({
+  #   
+  #   req(input$tabs == "MSpectrum")
+  #   
+  #   actionButton("run2", "run", width = "100%", style="margin-bottom:8px")
+  #   
+  # })
+  # 
+  # output$run3 <- renderUI({
+  #   
+  #   req(input$tabs == "SIM")
+  #   
+  #   actionButton("run3", "run", width = "100%", style="margin-bottom:8px")
+  #   
+  # })
   
   output$rtime <- renderUI({
     
-    req(input$tabs == "MSpectrum")
+    req(input$tabs == "MSpectrum",values[["DF"]])
     
     
     numericInput(inputId = "rtime",
@@ -992,7 +1032,7 @@ app_server <- function( input, output, session ) {
   
   output$labelThreshold <- renderUI({
     
-    req(input$tabs == "MSpectrum")
+    req(input$tabs == "MSpectrum", input$selectedFragment)
     
     
     numericInput(inputId = "labelThreshold",
@@ -1006,7 +1046,7 @@ app_server <- function( input, output, session ) {
   
   output$rtimeL <- renderUI({
     
-    req(input$tabs == "TIC" | input$tabs == "SIM" | input$tabs == "Parameters")
+    req(input$tabs == "TIC" | input$tabs == "SIM", values[["DF"]])
     
     
     if (req(input$selectedFragment) == "TIC" && input$tabs == "TIC") {
@@ -1033,7 +1073,7 @@ app_server <- function( input, output, session ) {
   output$rtimeR <- renderUI({
     
     # browser()
-    req(input$tabs == "TIC" | input$tabs == "SIM" | input$tabs == "Parameters")
+    req(input$tabs == "TIC" | input$tabs == "SIM",values[["DF"]])
     
     
     if (req(input$selectedFragment) == "TIC" && input$tabs == "TIC") {
@@ -1060,7 +1100,7 @@ app_server <- function( input, output, session ) {
   
   output$mass0 <- renderUI({
     
-    req(input$navbar != 0, input$tabs == "SIM" | input$tabs == "Parameters")
+    req(input$navbar != 0, input$tabs == "SIM",values[["DF"]])
     
     
     numericInput(inputId = "mass0",
@@ -1074,7 +1114,7 @@ app_server <- function( input, output, session ) {
   
   output$N_atom <- renderUI({
     
-    req(input$tabs == "SIM" | input$tabs == "Parameters")
+    req(input$tabs == "SIM",values[["DF"]])
     
     
     numericInput(inputId = "N_atom",
@@ -1089,7 +1129,7 @@ app_server <- function( input, output, session ) {
   
   output$mzd <- renderUI({
     
-    req(input$tabs == "SIM" | input$tabs == "Parameters")
+    req(input$tabs == "SIM",input$selectedFragment)
     
     
     numericInput(inputId = "mzd",
@@ -1102,13 +1142,13 @@ app_server <- function( input, output, session ) {
   })
   
   
-  output$undoButton <- renderUI({
-    
-    req(input$tabs == "Parameters")
-    
-    actionButton("undoButton","undo", width = "100%", style="margin-bottom:8px")
-    
-  })
+  # output$undoButton <- renderUI({
+  #   
+  #   req(input$tabs == "Parameters")
+  #   
+  #   actionButton("undoButton","undo", width = "100%", style="margin-bottom:8px")
+  #   
+  # })
   
   # })
   #   observeEvent({
@@ -1454,7 +1494,8 @@ app_server <- function( input, output, session ) {
     # selectedFragment  <- values[["Fragment"]] 
     # browser()
     # observe({
-   req(input$tabs == "TIC", input$rtimeL, input$rtimeR, input$selectedFragment,cancelOutput = T) # , input$selectedFragment, input$rtimeL, input$rtimeR)
+    
+    req(input$rtimeL, input$rtimeR) # , input$selectedFragment, input$rtimeL, input$rtimeR)
     # browser()
     #  if (isTRUE(input$tabs == "TIC")) {  #  replaced by req(input$tabs == "TIC")
     
@@ -1507,34 +1548,35 @@ app_server <- function( input, output, session ) {
     })
     # browser()
     
+    #TODO remove thee input$run1
     values[["plots_tic"]] <- plots_tic
     # cat(format(Sys.time(), "%X"))
     
     
-      if ("cache" %in% input$settings) {
-        # browser()
-        
-        lapply(seq_along(plots_tic), FUN =  function(i) {
+    if ("cache" %in% input$settings) {
+      # browser()
+      
+      lapply(seq_along(plots_tic), FUN =  function(i) {
         output[[paste0("tic", i,  "_f", values[["runNo"]])]] <- renderCachedPlot({
-
+          
           plots_tic[[i]]
-
+          
         }, cacheKeyExpr = list(input$rtimeL,input$rtimeR))
         
-        })
-        
-      } else {
-
-        lapply(seq_along(plots_tic), FUN =  function(i) {
-        output[[paste0("tic",i , "_f", values[["runNo"]])]] <- renderPlot({
+      })
+      
+    } else {
+      
+      lapply(seq_along(plots_tic), FUN =  function(i) {
+        output[[paste0("tic",i , "_f", values[["runNo"]], input$run1)]] <- renderPlot({
           
           plots_tic[[i]]
           
         })
-        })
-        
-      }
-      # browser()
+      })
+      
+    }
+    # browser()
     splitIndex <- findInterval(length(plots_tic)/2, seq_len(length(plots_tic)), all.inside = T)
     # cat(format(Sys.time(), "%X"))
     
@@ -1542,9 +1584,9 @@ app_server <- function( input, output, session ) {
       # browser()
       #req(TICplots())
       # req(values[["rawData"]])
-      plots_ticA <-  lapply(seq_len(splitIndex), function(i) {
+      lapply(seq_len(splitIndex), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", values[["runNo"]]), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]])) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
       })
       
     })
@@ -1554,9 +1596,9 @@ app_server <- function( input, output, session ) {
       #   req(TICplots())
       req(length(plots_tic) > 1)
       # create tabPanel with datatable in it
-      plots_ticB <- lapply((splitIndex+1):length(plots_tic), function(i) {
+      lapply((splitIndex+1):length(plots_tic), function(i) {
         
-        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]])) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("tic",i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic",i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -1564,11 +1606,11 @@ app_server <- function( input, output, session ) {
     })
     
     
-    
+    # return(plots_tic)
     
     #    }
     #})
-  },label = "ticOut", ignoreNULL = T)
+  },label = "ticOut")
   
   # 
   # observeEvent(values[["DF"]], {
@@ -1596,7 +1638,7 @@ app_server <- function( input, output, session ) {
   }, {
     
     
-    req(input$tabs == "MSpectrum", input$rtime) # if I add input$selectedFragment != "TIC" here in req() isntead of the if loop it doesnt work properly (triggers plotting twice)
+    req(input$rtime) # if I add input$selectedFragment != "TIC" here in req() isntead of the if loop it doesnt work properly (triggers plotting twice)
     
     
     # rtime_update_server <- (values[["DF"]][name == input$selectedFragment, 2] + values[["DF"]][name == input$selectedFragment, 3])/2 # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
@@ -1665,36 +1707,36 @@ app_server <- function( input, output, session ) {
     if ("cache" %in% input$settings) {
       
       lapply(seq_along(plots_ms), FUN =  function(i) {
-      
-      output[[paste0("mspec", i, "_f", values[["runNo"]]), input$run2]] <- renderCachedPlot({
         
-        plots_ms[[i]]
+        output[[paste0("mspec", i, "_f", values[["runNo"]]), input$run2]] <- renderCachedPlot({
+          
+          plots_ms[[i]]
+          
+        },cacheKeyExpr = list(input$rtime,input$labelThreshold))
         
-      },cacheKeyExpr = list(input$rtime,input$labelThreshold))
-      
       })
       
-      } else {
-        
-    lapply(seq_along(plots_ms), FUN =  function(i) {
+    } else {
       
-        output[[paste0("mspec", i, "_f", values[["runNo"]])]] <- renderPlot({
+      lapply(seq_along(plots_ms), FUN =  function(i) {
+        
+        output[[paste0("mspec", i, "_f", values[["runNo"]], input$run2)]] <- renderPlot({
           
           plots_ms[[i]]
           
         })
-        })
-        
-      }
+      })
+      
+    }
     
-
+    splitIndex <- findInterval(length(plots_ms)/2, seq_len(length(plots_ms)), all.inside = T)
     output$plots_msA <- renderUI({
       # req(MSpecplots())
       #req(values[["rawData"]])
       # create tabPanel with datatable in it
-     lapply(seq_len(values[["plotIndex"]]), function(i) {
+      lapply(seq_len(splitIndex), function(i) {
         
-        plotOutput(paste0("mspec",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("mspec",i, "_f", values[["runNo"]],input$run2),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]],input$run2)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -1705,16 +1747,16 @@ app_server <- function( input, output, session ) {
       # req(MSpecplots())
       req(length(values[["rawData"]]) > 1)
       # create tabPanel with datatable in it
-      lapply((values[["plotIndex"]]+1):length(values[["rawData"]]), function(i) {
+      lapply((splitIndex+1):length(plots_ms), function(i) {
         
-        plotOutput(paste0("mspec",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("mspec",i, "_f", values[["runNo"]],input$run2),hover = paste0("plot_hover_mspec",i, "_f", values[["runNo"]],input$run2)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
       
     })
     
-
+    
     #}
   },label = "msOut")
   
@@ -1732,7 +1774,7 @@ app_server <- function( input, output, session ) {
     
     
     # browser()
-    req(input$tabs == "SIM", input$mass0, input$N_atom,input$rtimeL,input$rtimeR)
+    req(input$mass0, input$N_atom,input$rtimeL,input$rtimeR)
     
     
     # })
@@ -1826,20 +1868,20 @@ app_server <- function( input, output, session ) {
     # browser()
     values[["plots_sim"]] <- plots_sim
     
-  
-      if ("cache" %in% input$settings) {
-        
-        lapply(seq_along(plots_sim), FUN =  function(i) {
+    
+    if ("cache" %in% input$settings) {
+      
+      lapply(seq_along(plots_sim), FUN =  function(i) {
         output[[paste0("sim", i, "_f", values[["runNo"]])]] <- renderCachedPlot({
           
           plots_sim[[i]]
           
         }, cacheKeyExpr = list(input$mzd, input$N_atom,input$mass0,input$rtimeL,input$rtimeR))
-        })
-        
-      } else {
-        lapply(seq_along(plots_sim), FUN =  function(i) {
-        output[[paste0("sim", i, "_f", values[["runNo"]])]] <- renderPlot({
+      })
+      
+    } else {
+      lapply(seq_along(plots_sim), FUN =  function(i) {
+        output[[paste0("sim", i, "_f", values[["runNo"]],input$run3)]] <- renderPlot({
           
           plots_sim[[i]]
           
@@ -1847,13 +1889,15 @@ app_server <- function( input, output, session ) {
       })
     }
     
+    splitIndex <- findInterval(length(plots_sim)/2, seq_len(length(plots_sim)), all.inside = T)
+    
     output$plots_simA <- renderUI({
       #req(values[["rawData"]])
       
       # create tabPanel with datatable in it
       plots_simA <-  lapply(seq_len(values[["plotIndex"]]), function(i) {
         # req(SIMplots())
-        plotOutput(paste0("sim",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_sim",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("sim",i, "_f", values[["runNo"]],input$run3),hover = paste0("plot_hover_sim",i, "_f", values[["runNo"]],input$run3)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
@@ -1862,17 +1906,21 @@ app_server <- function( input, output, session ) {
     
     output$plots_simB <- renderUI({
       #req(SIMplots())
-      req(length(values[["rawData"]]) > 1)
+      req(length(plots_sim) > 1)
       # create tabPanel with datatable in it
-      plots_simB <- lapply((values[["plotIndex"]]+1):length(values[["rawData"]]), function(i) {
+      plots_simB <- lapply((splitIndex+1):length(plots_sim), function(i) {
         
-        plotOutput(paste0("sim",i, "_f", values[["runNo"]]),hover = paste0("plot_hover_sim",i, "_f", values[["runNo"]])) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
+        plotOutput(paste0("sim",i, "_f", values[["runNo"]],input$run3),hover = paste0("plot_hover_sim",i, "_f", values[["runNo"]],input$run3)) #%>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
         #plotOutput(paste0("MSpectrum",i))
         
       })
     })
     
+    
+    
   }, label = "simOut")
+  
+  
   
   
   
@@ -2394,6 +2442,7 @@ app_server <- function( input, output, session ) {
   #
   #   })
   
+
   observeEvent(input$saveTotable, {
     
     # browser()
@@ -2402,23 +2451,25 @@ app_server <- function( input, output, session ) {
     # If you use data table then the syntax is: DF[c(DF[,1] == input$selectedFragment), 2] <- input$rtimeL
     DF[c(DF[,1] == input$selectedFragment), 2] <- input$rtimeL
     DF[c(DF[,1] == input$selectedFragment), 3] <- input$rtimeR
-    #DF[DF[1] == input$selectedFragment, 4] <- input$mass0
-    #DF[DF[1] == input$selectedFragment, 5] <- input$N_atom
+    DF[c(DF[,1] == input$selectedFragment), 4] <- input$mass0
+    DF[c(DF[,1] == input$selectedFragment), 5] <- input$N_atom
     # TODO, replace corresponding values
+    
+    values[["DF"]] <- DF
     
     openxlsx::write.xlsx(DF, file = values[["paramFile"]], row.names = F, keepNA = F)
     
-    output$table <- DT::renderDT({
-      #browser()
-      
-      DT::datatable(DF,extensions = 'AutoFill', style = "bootstrap", options = list(
-        autoFill = TRUE,
-        pageLength = 50,
-        lengthMenu = c(10, 25, 50, 100, 1000)
-      ),
-      editable = 'cell',selection = 'none')
-      
-    })
+    # output$table <- DT::renderDT({
+    #   #browser()
+    #   
+    #   DT::datatable(DF,extensions = 'AutoFill', style = "bootstrap", options = list(
+    #     autoFill = TRUE,
+    #     pageLength = 50,
+    #     lengthMenu = c(10, 25, 50, 100, 1000)
+    #   ),
+    #   editable = 'cell',selection = 'none')
+    #   
+    # })
     
     showNotification("Saved !")
     
