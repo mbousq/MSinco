@@ -23,6 +23,7 @@ app_ui <- function(request) {
       # tags$title("MSinco"),
       id= "navbar",
       selected = "Settings",
+
       # shinyjs::useShinyjs(),
       # tags$head(tags$style(HTML(
       #   "#navbar > li:first-child { display: none; }"
@@ -32,7 +33,24 @@ app_ui <- function(request) {
       # shinyjs::useShinyjs(),
       # tags$style(".shiny-file-input-progress {display: none}"),
 
-
+      tabPanel("Settings",
+               
+               wellPanel(h5("Settings"),
+                         radioButtons("graphics", label = "Graphics",
+                                     choices = list("lattice (faster)" = 1, "ggplot" = 2), 
+                                     selected = "1"),
+                         checkboxGroupInput("settings", "Other settings",
+                                            choiceNames = c("use parallel processing to import the data ? (parallel processing is only used to import the data, not subsequently)") , 
+                                            choiceValues = c("parallel"),selected = c("parallel") ))) ,
+      
+      navbarMenu("Import",
+                 tabPanel(title = "Create experiment"),
+                 tabPanel(title = "Import experiment")
+      ),
+      navbarMenu("Export",
+                 tabPanel(title = "Active plots"),
+                 tabPanel(title = "All plots")),
+      
       tabPanel(title = "Visualization",
                
                sidebarLayout(
@@ -55,7 +73,8 @@ app_ui <- function(request) {
                    # uiOutput("RB"), # hr(),
                    h5("Parameters"),
                    # shinyjs::hidden(uiOutput("selectedFragment")),
-                   selectInput("selectedFragment", "Fragments", "TIC", multiple= F, selectize=TRUE),
+                   # selectInput("selectedFragment", "Fragments", "TIC", multiple= F, selectize=TRUE),
+                   uiOutput("selectedFragment"),
                    uiOutput("selectedFiles"),
                    uiOutput("rtime"), # hr(),
                    uiOutput("labelThreshold"),
@@ -64,11 +83,14 @@ app_ui <- function(request) {
                    uiOutput("mass0"),
                    uiOutput("N_atom"),
                    uiOutput("mzd"),
+                   uiOutput("saveActivePlotsButton"),
+                   
+                   # actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
+                   
                    # uiOutput("selectedFragment"),
                    
                    
                    # # uiOutput("selectedFragment_tic"),
-                   # uiOutput("saveActivePlotsButton"),
                    # uiOutput("saveTotableButton"),
                    # uiOutput("runButton"),
                    # uiOutput("undoButton"),
@@ -127,8 +149,7 @@ app_ui <- function(request) {
                      #              value = NULL, # max(rawData1()@featureData@data$retentionTime)/2+10,
                      #              step = 0.1),
 
-                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                     
+
                      
                                      tagList(
                                        tagAppendAttributes(actionButton("run1", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run1"
@@ -151,7 +172,6 @@ app_ui <- function(request) {
                      #                    #value = rows(values[["DF"]],values[["DF"]][[1]] ==input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
                      #                    value = NULL),
 
-                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
                      tagList(
                        tagAppendAttributes(actionButton("run2", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run2"
                        ))
@@ -196,7 +216,6 @@ app_ui <- function(request) {
                      #              value = NULL,
                      #              step = 0.1),
 
-                     actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
                      actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
                      tagList(
                        tagAppendAttributes(actionButton("run3", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run3"
@@ -300,6 +319,9 @@ app_ui <- function(request) {
       tabPanel("Analysis",
                sidebarLayout(
                sidebarPanel(width = 3,
+                            h5("Parameters"),
+                            conditionalPanel(
+                              'output.selectedFiles',
                             
                             numericInput("mzd2","Mass difference",value = 0.3),
                             checkboxGroupInput("runParameters", NULL, 
@@ -309,31 +331,20 @@ app_ui <- function(request) {
                             actionButton("undoButton","undo", width = "49%", style="margin-bottom:8px"),
                             actionButton("runButton2", "Save table & Run", width = "100%", style="margin-bottom:8px")
                             
-                            ),
+                            )),
                mainPanel(
                          tabPanel("Parameters", fluidRow(column(6, rhandsontable::rHandsontableOutput('hot')) ))
                )
                )
                ),
-
-      navbarMenu("Import",
-                 tabPanel(title = "Create experiment"),
-                 tabPanel(title = "Import experiment")
-                 ),
-      
-      navbarMenu("Export",
-                 tabPanel(title = "Active plots"),
-                 tabPanel(title = "All plots")),
-      tabPanel("Settings",
-               
-               wellPanel(h5("Settings"),
-                         checkboxGroupInput("settings", "",
-                                            choiceNames = c("use parallel processing to import the data ? (parallel processing is only at the import stage, not subsequently)", "use ggplot graphics to plot ? (slower) ", "use lattice graphics to plot ? (faster)") , 
-                                            choiceValues = c("parallel","ggplot","lattice"),selected = c("parallel","lattice") ))) ,
       tags$script(
         HTML("var header = $('.navbar > .container-fluid');
                               header.append('<div style=\"float:right; padding-top: 15px\"><button id=\"quitButton\" type=\"button\" class=\"btn btn-danger action-button\" >Quit</button></div>')")
       )
+      #,
+
+      
+
       
                
       

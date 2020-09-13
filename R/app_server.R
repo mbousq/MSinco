@@ -12,15 +12,18 @@ app_server <- function( input, output, session ) {
   options(future.supportsMulticore.unstable = "quiet")
   options(stringsAsFactors=FALSE)
   options(shiny.reactlog=TRUE)
-  options(digits=3)
-  shinyOptions(cache = memoryCache(max_size = 300e6))
+  options(digits=4)
+  # shinyOptions(cache = memoryCache(max_size = 300e6))
   onStop(function(state) future::plan("sequential"))
+  # onStop(function(state) .rs.restartR())
   session$onSessionEnded(stopApp)
   n_undo = 0
-  paramFile_header <- c("name", "rt_left", "rt_right", "mass_0", "lab_atoms")
+  paramFile_header <- c("fragment", "rt_left", "rt_right", "mass_0", "lab_atoms")
   paramFile_num_header <- c("rt_left", "rt_right", "mass_0", "lab_atoms")
-
-    # TODO this is a dirsty hack for direcotry and paramFile
+  workers <- data.table::getDTthreads()
+  
+  
+  # TODO this is a dirsty hack for direcotry and paramFile
   values <- reactiveValues()
   values[["DF"]] <- NULL
   values[["lastValues"]] <- NULL
@@ -219,8 +222,10 @@ app_server <- function( input, output, session ) {
       warning = function(cond) {message("Please choose a valid directory"); return(NULL) }
       )
       
-      if (is.null(values[["directory"]])) {
-        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
+      # browser()
+      if (is.null(values[["directory"]]) || !file.exists(paste0(values[["directory"]], "/Parameters/ParameterFile.xlsx"))) {
+        warning("Invalid directory or the 'ParameterFile.xlsx' was not found")
+        updateTabsetPanel(session, inputId = "navbar", selected = "Visualization")
         req(FALSE)
       }
       
@@ -235,7 +240,7 @@ app_server <- function( input, output, session ) {
         # browser()
         tmp <- openxlsx::read.xlsx(values[["paramFile"]],sheet = 1, cols = 1:5) %>% data.table::setDT() #,.name_repair="minimal"
         
-        # expected_header <- c("name", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
+        # expected_header <- c("fragment", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
         # 
         
         validate(
@@ -270,15 +275,15 @@ app_server <- function( input, output, session ) {
       # browser()
       if ("parallel" %in% input$settings) {
         
-        future::plan("multiprocess")
+        future::plan("multiprocess",workers = workers)
         
       }
       # browser()
       # progressr::without_progress()
-      # cat(format(Sys.time(), "%X"))
+      cat(format(Sys.time(), "%X"))
       progressr::withProgressShiny(message = 'Extracting data ...',value = 0,  {
-        
-        netCDFs <- list.files(paste0(values[["directory"]],"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T) %>% gtools::mixedsort()
+
+        netCDFs <- list.files(paste0(values[["directory"]],"/Netcdfs"), full.names = TRUE, pattern =  "(*.CDF$)|(.mzXML$)|(mzData$)|(mzML$)", ignore.case = T) %>% gtools::mixedsort()
         
         p <- progressr::progressor(steps = length(netCDFs)*3)
         
@@ -301,6 +306,7 @@ app_server <- function( input, output, session ) {
           msnExp %>% methods::as("data.frame") %>% data.table::setDT() %>% `attr<-`("fileName", row.names(msnExp@phenoData))
         })
 
+        # browser()
         # rawData <- future.apply::future_lapply(msnExp, FUN = function(msnExp) {
         #   # p()
         #   tmp <- MSnbase::spectrapply(msnExp , function(msnExp) {
@@ -314,7 +320,7 @@ app_server <- function( input, output, session ) {
         #   return(tmp)
         # })
         
-        # cat(format(Sys.time(), "%X"))
+        cat(format(Sys.time(), "%X"))
         
         rawData_tic <- lapply(rawData, function(rawData) {
           p()
@@ -335,6 +341,9 @@ app_server <- function( input, output, session ) {
         values[["rawData"]] <- rawData
         values[["rawData_tic"]] <- rawData_tic
         values[["rawData_msnExp"]] <- msnExp
+        
+        
+        future::plan("sequential")
         updateTabsetPanel(session,inputId = "navbar",selected = "Visualization")
         
       })
@@ -526,7 +535,7 @@ app_server <- function( input, output, session ) {
   #                                label = "Retention time (left)",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = values[["DF"]][name == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                                value = values[["DF"]][fragment == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                                step = 0.1)
   # 
   #                 }
@@ -555,7 +564,7 @@ app_server <- function( input, output, session ) {
   #                                label = "Retention time (right)",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = values[["DF"]][name == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                                value = values[["DF"]][fragment == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                                step = 0.1)
   # 
   #                 }
@@ -599,7 +608,7 @@ app_server <- function( input, output, session ) {
   #                              #min = min(rawData1()@featureData@data$retentionTime),
   #                              #max = max(rawData1()@featureData@data$retentionTime),
   #                              #value = rows(values[["DF"]],values[["DF"]][[1]] ==input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
-  #                              value = (values[["DF"]][name == input$selectedFragment, 2] + values[["DF"]][name == input$selectedFragment, 3])/2, # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
+  #                              value = (values[["DF"]][fragment == input$selectedFragment, 2] + values[["DF"]][fragment == input$selectedFragment, 3])/2, # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
   #                              step = 0.1),
   #               # })
   # 
@@ -660,7 +669,7 @@ app_server <- function( input, output, session ) {
   #                              label = "Retention time (left)",
   #                              #min = min(rawData1()@featureData@data$retentionTime),
   #                              #max = max(rawData1()@featureData@data$retentionTime),
-  #                              value = values[["DF"]][name == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                              value = values[["DF"]][fragment == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                              step = 0.1)
   # 
   # 
@@ -674,7 +683,7 @@ app_server <- function( input, output, session ) {
   #                              label = "Retention time (right)",
   #                              #min = min(rawData1()@featureData@data$retentionTime),
   #                              #max = max(rawData1()@featureData@data$retentionTime),
-  #                              value = values[["DF"]][name == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                              value = values[["DF"]][fragment == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                              step = 0.1)
   #               # })
   # 
@@ -687,7 +696,7 @@ app_server <- function( input, output, session ) {
   #                              label = "mass0 (M0)",
   #                              #min = 40,
   #                              #max = 600,
-  #                              value = values[["DF"]][name == input$selectedFragment, 4],
+  #                              value = values[["DF"]][fragment == input$selectedFragment, 4],
   #                              step = 1
   #                 )
   #               # })
@@ -701,7 +710,7 @@ app_server <- function( input, output, session ) {
   #                              label = "Number of isotopomers",
   #                              #min = 1,
   #                              #max = 10,
-  #                              value = values[["DF"]][name == input$selectedFragment, 5],
+  #                              value = values[["DF"]][fragment == input$selectedFragment, 5],
   #                              step = 1
   #                 )
   #               # })
@@ -803,7 +812,7 @@ app_server <- function( input, output, session ) {
   #                #min = min(rawData1()@featureData@data$retentionTime),
   #                #max = max(rawData1()@featureData@data$retentionTime),
   #                #value = rows(paramFileTable(),paramFileTable()[[1]] == input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
-  #                value = (values[["DF"]][name ==input$selectedFragment, 2] + values[["DF"]][name ==input$selectedFragment, 3])/2, # to be used with input$selectedFragment2: as.numeric(gsub(".*@",replacement = "", input$selectedFragment2)),
+  #                value = (values[["DF"]][fragment ==input$selectedFragment, 2] + values[["DF"]][fragment ==input$selectedFragment, 3])/2, # to be used with input$selectedFragment2: as.numeric(gsub(".*@",replacement = "", input$selectedFragment2)),
   #                step = 0.1)
   # })
   # 
@@ -841,7 +850,7 @@ app_server <- function( input, output, session ) {
   #                  label = "Retention time (left)",
   #                  #min = min(rawData1()@featureData@data$retentionTime),
   #                  #max = max(rawData1()@featureData@data$retentionTime),
-  #                  value = values[["DF"]][name ==input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                  value = values[["DF"]][fragment ==input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                  step = 0.1)
   #     
   #   }
@@ -869,7 +878,7 @@ app_server <- function( input, output, session ) {
   #                  label = "Retention time (right)",
   #                  #min = min(rawData1()@featureData@data$retentionTime),
   #                  #max = max(rawData1()@featureData@data$retentionTime),
-  #                  value = values[["DF"]][name ==input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                  value = values[["DF"]][fragment ==input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                  step = 0.1)
   #     
   #   }
@@ -884,7 +893,7 @@ app_server <- function( input, output, session ) {
   #                label = "mass0 (M0)",
   #                #min = 40,
   #                #max = 600,
-  #                value = values[["DF"]][name ==input$selectedFragment, 4],
+  #                value = values[["DF"]][fragment ==input$selectedFragment, 4],
   #                step = 1
   #   )
   # })
@@ -898,7 +907,7 @@ app_server <- function( input, output, session ) {
   #                label = "Number of isotopomers",
   #                #min = 1,
   #                #max = 10,
-  #                value = values[["DF"]][name ==input$selectedFragment, 5],
+  #                value = values[["DF"]][fragment ==input$selectedFragment, 5],
   #                step = 1
   #   )
   # })
@@ -971,37 +980,55 @@ app_server <- function( input, output, session ) {
   # })
   
   
-  output$selectedFiles <- renderUI({
 
-    # req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum", values[["rawData"]])
 
-    selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
-  })
-
-  observeEvent({
-    input$tabs
-    values[["rawData"]]}, {
-      
-      selectedFragment <- input$selectedFragment
-      
-      
-        switch (input$tabs,
-                "TIC" = {
-                  updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
-                },
-                "SIM" = {
-                  updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
-                },
-                "MSpectrum" = {
-                  updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
-                }
-        )
-      
-    # updateSelectInput(session,"selectedFiles", choices =  names(values[["rawData"]]), selected = names(values[["rawData"]]))
-    # updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
-    
+  # dynInputs  = observeEvent({
+  #   input$tabs
+  #   values[["rawData"]]}, {
+  #     
+  #     selectedFragment <- input$selectedFragment
+  #     # browser()
+  #     
+  #       switch (input$tabs,
+  #               "TIC" = {
+  #                 updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
+  #               },
+  #               "SIM" = {
+  #                 updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
+  #               },
+  #               "MSpectrum" = {
+  #                 updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
+  #               }
+  #       )
+  #     
+  #   # updateSelectInput(session,"selectedFiles", choices =  names(values[["rawData"]]), selected = names(values[["rawData"]]))
+  #   # updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
+  #   
+  # 
+  # },ignoreInit = T,suspended = F,label = "dynInputs")
+  # 
   
-  },ignoreInit = T)
+# observeEvent({
+#     input$tabs
+#     values[["rawData"]]}, {
+# 
+#       dynInputs$resume
+# # browser()
+#   updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])),selected = "TIC")
+# 
+# 
+#       },ignoreInit = T,once = T,priority = 2)
+  
+  
+  
+  # observeEvent(values[["rawData"]], {
+  #   
+  #   
+  #   updateSelectInput(session,"selectedFragment", choices = "TIC", selected = "TIC")
+  #   
+  #   
+  # }, once = T, priority = 2)
+  
   
   
   # output$saveTotable <- renderUI({
@@ -1044,9 +1071,49 @@ app_server <- function( input, output, session ) {
   #   
   # })
   
+  # output$selectedFragment <- renderUI({ 
+  #   selectInput("selectedFragment", "Fragments", "TIC", multiple= F, selectize=TRUE)
+  #   
+  #   })
+  
+  output$saveActivePlotsButton <- renderUI({
+
+    req(values[["rawData"]])
+
+    actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px")
+
+  })
+  
+
+  output$selectedFragment <- renderUI({
+    req(values[["rawData"]])
+    selectInput("selectedFragment", "Fragments", isolate(c("TIC",values[["DF"]][[1]])), multiple= F, selectize=TRUE)
+    
+  })
+  
+  observeEvent({
+    input$selectedFragment
+    values[["DF"]]
+    values[["rawData"]]}, {
+      
+      # browser()
+      
+      req(values[["rawData"]],values[["DF"]],input$selectedFragment)
+      
+
+      
+      
+      output$selectedFiles <- renderUI({
+        
+        # req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum", values[["rawData"]])
+        
+        selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
+      })
+  
+      # browser()
   output$rtime <- renderUI({
     
-    req(input$tabs == "MSpectrum",values[["DF"]])
+    req(input$tabs == "MSpectrum")
     
     
     numericInput(inputId = "rtime",
@@ -1054,13 +1121,13 @@ app_server <- function( input, output, session ) {
                  #min = min(rawData1()@featureData@data$retentionTime),
                  #max = max(rawData1()@featureData@data$retentionTime),
                  #value = rows(paramFileTable(),paramFileTable()[[1]] == input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
-                 value = (values[["DF"]][name ==input$selectedFragment, 2] + values[["DF"]][name ==input$selectedFragment, 3])/2, # to be used with input$selectedFragment2: as.numeric(gsub(".*@",replacement = "", input$selectedFragment2)),
+                 value = (values[["DF"]][fragment == input$selectedFragment, 2] + values[["DF"]][fragment ==input$selectedFragment, 3])/2, # to be used with input$selectedFragment2: as.numeric(gsub(".*@",replacement = "", input$selectedFragment2)),
                  step = 0.1)
   })
   
   output$labelThreshold <- renderUI({
     
-    req(input$tabs == "MSpectrum", input$selectedFragment)
+    req(input$tabs == "MSpectrum")
     
     
     numericInput(inputId = "labelThreshold",
@@ -1074,10 +1141,10 @@ app_server <- function( input, output, session ) {
   
   output$rtimeL <- renderUI({
     
-    req(input$tabs == "TIC" | input$tabs == "SIM", values[["DF"]])
+    req(input$tabs == "TIC" | input$tabs == "SIM")
     
     
-    if (req(input$selectedFragment) == "TIC" && input$tabs == "TIC") {
+    if (input$selectedFragment == "TIC" && input$tabs == "TIC") {
       
       numericInput(inputId = "rtimeL",
                    label = "Retention time (left)",
@@ -1092,7 +1159,7 @@ app_server <- function( input, output, session ) {
                    label = "Retention time (left)",
                    #min = min(rawData1()@featureData@data$retentionTime),
                    #max = max(rawData1()@featureData@data$retentionTime),
-                   value = values[["DF"]][name ==input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
+                   value = values[["DF"]][fragment ==input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
                    step = 0.1)
       
     }
@@ -1101,10 +1168,10 @@ app_server <- function( input, output, session ) {
   output$rtimeR <- renderUI({
     
     # browser()
-    req(input$tabs == "TIC" | input$tabs == "SIM",values[["DF"]])
+    req(input$tabs == "TIC" | input$tabs == "SIM")
     
     
-    if (req(input$selectedFragment) == "TIC" && input$tabs == "TIC") {
+    if (input$selectedFragment == "TIC" && input$tabs == "TIC") {
       
       
       numericInput(inputId = "rtimeR",
@@ -1120,7 +1187,7 @@ app_server <- function( input, output, session ) {
                    label = "Retention time (right)",
                    #min = min(rawData1()@featureData@data$retentionTime),
                    #max = max(rawData1()@featureData@data$retentionTime),
-                   value = values[["DF"]][name ==input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
+                   value = values[["DF"]][fragment ==input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
                    step = 0.1)
       
     }
@@ -1128,28 +1195,28 @@ app_server <- function( input, output, session ) {
   
   output$mass0 <- renderUI({
     
-    req(input$navbar != 0, input$tabs == "SIM",values[["DF"]])
+    req(input$tabs == "SIM")
     
     
     numericInput(inputId = "mass0",
                  label = "mass0 (M0)",
                  #min = 40,
                  #max = 600,
-                 value = values[["DF"]][name ==input$selectedFragment, 4],
+                 value = values[["DF"]][fragment ==input$selectedFragment, 4],
                  step = 1
     )
   })
   
   output$N_atom <- renderUI({
     
-    req(input$tabs == "SIM",values[["DF"]])
+    req(input$tabs == "SIM")
     
     
     numericInput(inputId = "N_atom",
                  label = "Number of isotopomers",
                  #min = 1,
                  #max = 10,
-                 value = values[["DF"]][name ==input$selectedFragment, 5],
+                 value = values[["DF"]][fragment ==input$selectedFragment, 5],
                  step = 1
     )
   })
@@ -1157,7 +1224,7 @@ app_server <- function( input, output, session ) {
   
   output$mzd <- renderUI({
     
-    req(input$tabs == "SIM",input$selectedFragment)
+    req(input$tabs == "SIM")
     
     
     numericInput(inputId = "mzd",
@@ -1168,7 +1235,7 @@ app_server <- function( input, output, session ) {
                  step = 0.1
     )
   })
-  
+    },ignoreInit = T)
   
   # output$undoButton <- renderUI({
   #   
@@ -1217,7 +1284,7 @@ app_server <- function( input, output, session ) {
   #                   updateNumericInput(session, "rtimeL",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = sprintf(values[["DF"]][name == input$selectedFragment, 2], fmt = '%#.3f') # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                                value = sprintf(values[["DF"]][fragment == input$selectedFragment, 2], fmt = '%#.3f') # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                                )
   #                   
   # #
@@ -1236,7 +1303,7 @@ app_server <- function( input, output, session ) {
   #                   updateNumericInput(session,"rtimeR",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = sprintf(values[["DF"]][name == input$selectedFragment, 3], fmt = '%#.3f') # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                                value = sprintf(values[["DF"]][fragment == input$selectedFragment, 3], fmt = '%#.3f') # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                               )
   # 
   #                 }
@@ -1273,7 +1340,7 @@ app_server <- function( input, output, session ) {
   #                              #min = min(rawData1()@featureData@data$retentionTime),
   #                              #max = max(rawData1()@featureData@data$retentionTime),
   #                              #value = rows(values[["DF"]],values[["DF"]][[1]] ==input$selectedFragment)[[2]], #max(rawData1()@featureData@data$retentionTime)/2,
-  #                              value = sprintf((values[["DF"]][name == input$selectedFragment, 2] + values[["DF"]][name == input$selectedFragment, 3])/2, fmt = '%#.3f'), # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
+  #                              value = sprintf((values[["DF"]][fragment == input$selectedFragment, 2] + values[["DF"]][fragment == input$selectedFragment, 3])/2, fmt = '%#.3f'), # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
   #                              step = 0.1)
   #               # })
   # 
@@ -1320,7 +1387,7 @@ app_server <- function( input, output, session ) {
   #                                label = "Retention time (left)",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = sprintf(values[["DF"]][name == input$selectedFragment, 2], fmt = '%#.3f'), # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                                value = sprintf(values[["DF"]][fragment == input$selectedFragment, 2], fmt = '%#.3f'), # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                                step = 0.1)
   #       
   #           
@@ -1329,7 +1396,7 @@ app_server <- function( input, output, session ) {
   #                                label = "Retention time (right)",
   #                                #min = min(rawData1()@featureData@data$retentionTime),
   #                                #max = max(rawData1()@featureData@data$retentionTime),
-  #                                value = sprintf(values[["DF"]][name == input$selectedFragment, 3], fmt = '%#.3f'), # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                                value = sprintf(values[["DF"]][fragment == input$selectedFragment, 3], fmt = '%#.3f'), # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                                step = 0.1)
   #         
   #               
@@ -1337,14 +1404,14 @@ app_server <- function( input, output, session ) {
   #                            label = "mass0 (M0)",
   #                            #min = 40,
   #                            #max = 600,
-  #                            value = sprintf(values[["DF"]][name ==input$selectedFragment, 4], fmt = '%#.3f'))
+  #                            value = sprintf(values[["DF"]][fragment ==input$selectedFragment, 4], fmt = '%#.3f'))
   #              
   #               
   #                            updateNumericInput(session, "N_atom",
   #                            label = "Number of isotopomers",
   #                            #min = 1,
   #                            #max = 10,
-  #                            value = values[["DF"]][name ==input$selectedFragment, 5]
+  #                            value = values[["DF"]][fragment ==input$selectedFragment, 5]
   #                            )
   #                           
   #              
@@ -1373,7 +1440,7 @@ app_server <- function( input, output, session ) {
   #                                  label = "Retention time (left)",
   #                                  #min = min(rawData1()@featureData@data$retentionTime),
   #                                  #max = max(rawData1()@featureData@data$retentionTime),
-  #                                  value = values[["DF"]][name == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
+  #                                  value = values[["DF"]][fragment == input$selectedFragment, 2], # max(rawData1()@featureData@data$retentionTime)/2-10,
   #                                  step = 0.1)
   #               
   #               
@@ -1382,7 +1449,7 @@ app_server <- function( input, output, session ) {
   #                                  label = "Retention time (right)",
   #                                  #min = min(rawData1()@featureData@data$retentionTime),
   #                                  #max = max(rawData1()@featureData@data$retentionTime),
-  #                                  value = values[["DF"]][name == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
+  #                                  value = values[["DF"]][fragment == input$selectedFragment, 3], # max(rawData1()@featureData@data$retentionTime)/2+10,
   #                                  step = 0.1)
   #               
   #               
@@ -1390,14 +1457,14 @@ app_server <- function( input, output, session ) {
   #                                  label = "mass0 (M0)",
   #                                  #min = 40,
   #                                  #max = 600,
-  #                                  value = values[["DF"]][name ==input$selectedFragment, 4])
+  #                                  value = values[["DF"]][fragment ==input$selectedFragment, 4])
   #               
   #               
   #               updateNumericInput(session,"N_atom",
   #                                  label = "Number of isotopomers",
   #                                  #min = 1,
   #                                  #max = 10,
-  #                                  value = values[["DF"]][name ==input$selectedFragment, 5]
+  #                                  value = values[["DF"]][fragment ==input$selectedFragment, 5]
   #               )
   #               
   #               
@@ -1421,7 +1488,7 @@ app_server <- function( input, output, session ) {
   # Solution: use updateNumericInput to maybe flush directly to the client.
   # # OK: ajouteau debut de chaque observevent pour creer des plots (sim, tic, mspec) les valeurs, ex:
   #
-  #   N_atom <- paramFileTable()[name == input$selectedFragment, 5] etc pour decoreller UI et SEVER.
+  #   N_atom <- paramFileTable()[fragment == input$selectedFragment, 5] etc pour decoreller UI et SEVER.
   # Ensuite sur les tabs SIM etc utilise updatecheckbox poour choisir selected = input$selected fragment, comme ca l utilisateur n arrive jamais sur le "TIC"
   #
   # observeEvent({
@@ -1501,8 +1568,8 @@ app_server <- function( input, output, session ) {
   
   # create tic
   
-  # values[["DF"]][name ==input$selectedFragment, 2] <- input$rtimeL
-  # values[["DF"]][name ==input$selectedFragment, 3] <- input$rtimeR
+  # values[["DF"]][fragment ==input$selectedFragment, 2] <- input$rtimeL
+  # values[["DF"]][fragment ==input$selectedFragment, 3] <- input$rtimeR
   # 
   
   observeEvent({
@@ -1556,7 +1623,7 @@ app_server <- function( input, output, session ) {
       # 
       # browser()
       
-      if ("lattice" %in% input$settings) {
+      if (input$graphics == "1" ) {
         
         lattice::xyplot(tic~(rt/60), data = DT, type="l", xlab="Retention time (min)", ylab= "Intensity", main=title, col="black", scales= list(tck=c(1,0))
                         
@@ -1669,7 +1736,7 @@ app_server <- function( input, output, session ) {
     req(input$rtime) # if I add input$selectedFragment != "TIC" here in req() isntead of the if loop it doesnt work properly (triggers plotting twice)
     
     
-    # rtime_update_server <- (values[["DF"]][name == input$selectedFragment, 2] + values[["DF"]][name == input$selectedFragment, 3])/2 # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
+    # rtime_update_server <- (values[["DF"]][fragment == input$selectedFragment, 2] + values[["DF"]][fragment == input$selectedFragment, 3])/2 # to be used with  input$selectedFragment2: as.numeric(gsub(".*@",replacement = "",  input$selectedFragment2)),
     
     
     #if (input$selectedFragment != "TIC") {
@@ -1711,7 +1778,8 @@ app_server <- function( input, output, session ) {
       
       # browser()
       
-      if ("lattice" %in% input$settings) {
+      if (input$graphics == "1" ) {
+        
         lattice::xyplot(i ~ mz,data = DT, type="h",col="black", xlab="m/z", ylab= "Relative intensity", main = title, scales = list(tck=c(1,0), x=list(at=pretty(DT$mz))),
                         panel=function(...) { 
                           lattice::panel.text(data.labels$mz, data.labels$i,
@@ -1870,7 +1938,7 @@ app_server <- function( input, output, session ) {
       # browser()
       # lattice::xyplot(i ~ (rt/60), data = myData, groups= factor(round(mz)) ,type="l", xlab="Retention time (min)", ylab= "Intensity", main= "SIM",scales = list(tck=c(1,0)))
       
-      if ("lattice" %in% input$settings) {
+      if (input$graphics == "1" ) {
         
         if (length(myData) != 1) {
           mzGroups <- round(myData$mz)
@@ -2228,7 +2296,7 @@ app_server <- function( input, output, session ) {
   #     # browser()
   #     tmp <- openxlsx::read.xlsx(values[["paramFile"]],sheet = 1, cols = 1:5) %>% data.table::setDT() #,.name_repair="minimal"
   # 
-  #     # expected_header <- c("name", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
+  #     # expected_header <- c("fragment", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
   # 
   #     validate(
   # 
@@ -2330,8 +2398,8 @@ app_server <- function( input, output, session ) {
   # 
   #     values[["DF"]] <- openxlsx::read.xlsx(paramFile(),sheet = 1) #,.name_repair="minimal"
   # 
-  #     # expected_header <- c("name", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
-  #     expected_header <- c("name", "rt_left", "rt_right", "Mass0", "LabelAtoms")
+  #     # expected_header <- c("fragment", "RT", "lOffset", "rOffset", "Mass0", "LabelAtoms")
+  #     expected_header <- c("fragment", "rt_left", "rt_right", "Mass0", "LabelAtoms")
   # 
   #     validate(
   # 
@@ -2575,65 +2643,99 @@ app_server <- function( input, output, session ) {
   
   observeEvent(input$saveActivePlotsButton, {
     #stopifnot(!is.null(input$checkboxGroupInput))
-    if (!is.null(input$saveActivePlotsButton)) {
+   
       
       # if directory exists() ?????
-      activePlotsDir <- paste0(values[["directory"]],"/Active Plots")
+      activePlotsDir <- paste0(values[["directory"]],"/Active Plots/")
       
       if (!dir.exists(activePlotsDir)) {
         dir.create(activePlotsDir,mode = "0777")
       }
-      
+      browser()
       withProgress(message = 'Saving ...', value = 0, {
         
-        if (input$tabs == "TIC" && !is.null(TICplots)) {
-          # browser()
-          sapply(seq_along(values[["rawData"]]),function(i) {
-            
-            incProgress(1/(length(values[["rawData"]])*length(input$savePlots)))
-            #   system.time({
-            # png(paste0("/home/mathieu/Documents/MSinco demo/MSinco demo/Active Plots/", TICplots[[i]]$labels$title,".png"))
-            # print(TICplots[[i]])
-            # dev.off()
-            #   })
-            # system.time({
-            ggplot2::ggsave(paste0(TICplots[[i]]$labels$title,".png"), plot = TICplots[[i]], path = activePlotsDir, device = "png")
-            # })
-          })
-        }
-        
-        
-        if (input$tabs == "SIM" && !is.null(SIMplots)) {
-          
-          sapply(seq_along(values[["rawData"]]),function(i) {
-            
-            incProgress(1/(length(values[["rawData"]])*length(input$savePlots)))
-            # png(paste0(activePlotsDir, "/SIM_", i,".png"))
-            # print(SIMplots()[[i]])
-            # dev.off()
-            
-            ggplot2::ggsave(paste0(SIMplots[[i]]$labels$title,".png"), plot = SIMplots[[i]], path = activePlotsDir, device = "png")
-          })
-        }
-        
-        if (input$tabs == "MSpectrum" && !is.null(MSpecplots)) {
-          
-          sapply(seq_along(values[["rawData"]]),function(i) {
-            
-            incProgress(1/(length(values[["rawData"]])*length(input$savePlots)))
-            # png(paste0(activePlotsDir, "/MSpec_", i,".png"))
-            # print(MSpecplots()[[i]])
-            # dev.off()
-            
-            ggplot2::ggsave(paste0(MSpecplots[[i]]$labels$title,".png"), plot = MSpecplots[[i]], path = activePlotsDir, device = "png")
-            
-          })
-        }
-      })
-      
+                switch(input$tabs,
+               "TIC" = {
+                  
+                 if (!is.null(values[["plots_tic"]])) {
+                   
+                     
+                     incProgress(1/(length(values[["plots_tic"]])*length(input$savePlots)))
+              
+                     switch(input$graphics,
+                            "1" = {
+                              lapply(values[["plots_tic"]],function(plots_tic) {
+                                
+                              png(paste0(activePlotsDir,plots_tic$main,".png"))
+                              print(plots_tic)
+                              dev.off()
+                              })
+                            },
+                            "2" = {
+                              lapply(values[["plots_tic"]],function(plots_tic) {
+                                
+                              ggplot2::ggsave(paste0(plots_tic$labels$title,".png"), plot = plots_tic, path = activePlotsDir, device = "png")
+                              })
+                            }
+                            )
+                 }
+                 
+               },
+               "SIM" =  {
+                 if (!is.null(values[["plots_sim"]])) {
+                   
+                   
+                   incProgress(1/(length(values[["plots_sim"]])*length(input$savePlots)))
+                   
+                   switch(input$graphics,
+                          "1" = {
+                            lapply(values[["plots_sim"]],function(plots_sim) {
+                              
+                              png(paste0(activePlotsDir,plots_sim$main,".png"))
+                              print(plots_sim)
+                              dev.off()
+                            })
+                          },
+                          "2" = {
+                            lapply(values[["plots_sim"]],function(plots_sim) {
+                              
+                              ggplot2::ggsave(paste0(plots_sim$labels$title,".png"), plot = plots_sim, path = activePlotsDir, device = "png")
+                            })
+                          }
+                   )
+                 }
+               },
+                 
+               "MSpectrum"= {
+                 if (!is.null(values[["plots_ms"]])) {
+                   
+                   
+                   incProgress(1/(length(values[["plots_ms"]])*length(input$savePlots)))
+                   
+                   switch(input$graphics,
+                          "1" = {
+                            lapply(values[["plots_ms"]],function(plots_ms) {
+                              
+                              png(paste0(activePlotsDir,plots_ms$main,".png"))
+                              print(plots_ms)
+                              dev.off()
+                            })
+                          },
+                          "2" = {
+                            lapply(values[["plots_ms"]],function(plots_ms) {
+                              
+                              ggplot2::ggsave(paste0(plots_ms$labels$title,".png"), plot = plots_ms, path = activePlotsDir, device = "png")
+                            })
+                          }
+                   )
+                 }
+               }
+        )
+      }
+        )
     }
-    
-  }, label = "saveActivePlotsButton")
+
+  , label = "saveActivePlotsButton")
   
   
   #   observeEvent(input$savePlotsButton, {
