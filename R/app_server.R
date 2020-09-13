@@ -274,8 +274,8 @@ app_server <- function( input, output, session ) {
         
       }
       # browser()
-      
-      # cat(format(Sys.time(), "%X"))      
+      # progressr::without_progress()
+      # cat(format(Sys.time(), "%X"))
       progressr::withProgressShiny(message = 'Extracting data ...',value = 0,  {
         
         netCDFs <- list.files(paste0(values[["directory"]],"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T) %>% gtools::mixedsort()
@@ -291,15 +291,28 @@ app_server <- function( input, output, session ) {
         })
         
         # browser()
-        
+        # incProgress(1/8)
         #filesName <- 
-        # cat(format(Sys.time(), "%X"))   
+        # cat(format(Sys.time(), "%X"))
         names(msnExp) <- lapply(msnExp, function(msnExp) row.names(msnExp@phenoData)) #)rownames(MSnbase::phenoData(msnExp[[1]])) #filesName
         
         rawData <- future.apply::future_lapply(msnExp, FUN = function(msnExp) {
           p()
           msnExp %>% methods::as("data.frame") %>% data.table::setDT() %>% `attr<-`("fileName", row.names(msnExp@phenoData))
         })
+
+        # rawData <- future.apply::future_lapply(msnExp, FUN = function(msnExp) {
+        #   # p()
+        #   tmp <- MSnbase::spectrapply(msnExp , function(msnExp) {
+        # 
+        #     data.table(rt = MSnbase::rtime(msnExp) ,mz = MSnbase::mz(msnExp), i = MSnbase::intensity(msnExp))
+        # 
+        #   }) %>% data.table::rbindlist(idcol=T)
+        # 
+        #   attr(tmp,"fileName") <- rownames(MSnbase::phenoData(msnExp))
+        # 
+        #   return(tmp)
+        # })
         
         # cat(format(Sys.time(), "%X"))
         
@@ -308,18 +321,13 @@ app_server <- function( input, output, session ) {
           rawData[, .(tic = sum(i)), by = .(rt)] %>% `attr<-`("fileName", attr(rawData,"fileName")) #%>% `attr<-`("file", rownames(MSnbase::phenoData(msnExp[[1]])))
         })
         
+
+        
+        
+        # incProgress(2/2)
         # cat(format(Sys.time(), "%X"))
         # 
-        # rawData_ms <- future.apply::future_lapply(rawData, function(rawData) {
-        #   p()
-        #   rtime <- rawData[, unique(rt)]
-        # })
-        # 
-        # rtime <- rawData[, unique(rt)]
-        # specIndex <- MALDIquant::match.closest(input$rtime*60,rtime)
-        # # intensities <- DT2[rt == rtime[specIndex], i]
-        # # masses <- DT2[rt == rtime[specIndex], mz]
-        # DT <- rawData[rt == rtime[specIndex], .(i = i/max(i)*100, mz)]
+
         
         
         # browser()
@@ -327,7 +335,7 @@ app_server <- function( input, output, session ) {
         values[["rawData"]] <- rawData
         values[["rawData_tic"]] <- rawData_tic
         values[["rawData_msnExp"]] <- msnExp
-        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
+        updateTabsetPanel(session,inputId = "navbar",selected = "Visualization")
         
       })
       
@@ -348,7 +356,7 @@ app_server <- function( input, output, session ) {
           )
           
         )
-        updateTabsetPanel(session,inputId = "navbar",selected = "Home")
+        updateTabsetPanel(session,inputId = "navbar",selected = "Visualization")
       }
       
       
@@ -921,59 +929,79 @@ app_server <- function( input, output, session ) {
   #################################  ##################################  ##################################  ##################################
   
   
-  observeEvent(input$tabs, {
+  # observeEvent(input$tabs, {
+  #   
+  #   switch (input$tabs,
+  #           "TIC" = {
+  #             shinyjs::showElement("selectedFragment")
+  #             },
+  #           "SIM" = {
+  #             shinyjs::showElement("selectedFragment")
+  #             },
+  #           "MSpectrum" = {
+  #             shinyjs::showElement("selectedFragment")
+  #             },
+  #           "Parameters" = {
+  #             shinyjs::hideElement("selectedFragment")
+  #             }
+  #   )
     
-    switch (input$tabs,
-            "TIC" = {
-              shinyjs::showElement("selectedFragment")
-              },
-            "SIM" = {
-              shinyjs::showElement("selectedFragment")
-              },
-            "MSpectrum" = {
-              shinyjs::showElement("selectedFragment")
-              },
-            "Parameters" = {
-              shinyjs::hideElement("selectedFragment")
-              }
-    )
     
-    
-  },priority = 2)
+  # },priority = 2)
   
   # 
-  output$selectedFragment <- renderUI({
-    # req(input$tabs)
-    req(values[["rawData"]])
-    
-    tagList(
-      
-    # if (isolate(input$tabs) == "TIC") {
-    selectInput('selectedFragment', 'Fragments', isolate(c("TIC",values[["DF"]][[1]])), multiple= F, selectize=TRUE),
-    selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
-    )
-    #
-    # } else {
-    
-    # selectInput('selectedFragment', 'Fragments', isolate(values[["DF"]][[1]]), multiple= F, selectize=TRUE)
-    
-    # }
-  })
-  
-  
-  # output$selectedFiles <- renderUI({
-  # 
-  #   req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum", values[["rawData"]])
-  # 
+  # output$selectedFragment <- renderUI({
+  #   # req(input$tabs)
+  #   req(values[["rawData"]])
+  #   
+  #   selectedFragment <- input$selectedFragment
+  #   tagList(
+  #     
+  #     
+  #   # if (isolate(input$tabs) == "TIC") {
+  #   # selectInput('selectedFragment', 'Fragments', isolate(c("TIC",values[["DF"]][[1]])), multiple= F, selectize=TRUE),
   #   selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
+  #   )
+  #   #
+  #   # } else {
+  #   
+  #   # selectInput('selectedFragment', 'Fragments', isolate(values[["DF"]][[1]]), multiple= F, selectize=TRUE)
+  #   
+  #   # }
   # })
-
-  observeEvent(values[["rawData"]], {
-    
-    updateSelectInput(session,"selectedFiles", choices =  names(values[["rawData"]]), selected = names(values[["rawData"]]))
-      
   
+  
+  output$selectedFiles <- renderUI({
+
+    # req(input$tabs == "SIM" | input$tabs == "TIC" | input$tabs == "MSpectrum", values[["rawData"]])
+
+    selectInput("selectedFiles", 'Files', names(values[["rawData"]]), multiple=TRUE, selectize=T,selected = names(values[["rawData"]]))
   })
+
+  observeEvent({
+    input$tabs
+    values[["rawData"]]}, {
+      
+      selectedFragment <- input$selectedFragment
+      
+      
+        switch (input$tabs,
+                "TIC" = {
+                  updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
+                },
+                "SIM" = {
+                  updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
+                },
+                "MSpectrum" = {
+                  updateSelectInput(session,"selectedFragment", choices =  isolate(values[["DF"]][[1]]), selected = selectedFragment)
+                }
+        )
+      
+    # updateSelectInput(session,"selectedFiles", choices =  names(values[["rawData"]]), selected = names(values[["rawData"]]))
+    # updateSelectInput(session,"selectedFragment", choices =  isolate(c("TIC",values[["DF"]][[1]])), selected = selectedFragment)
+    
+  
+  },ignoreInit = T)
   
   
   # output$saveTotable <- renderUI({

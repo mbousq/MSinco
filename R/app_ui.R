@@ -10,7 +10,7 @@ app_ui <- function(request) {
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
-    tags$head(tags$script(HTML(keybinding_return))),
+    
     # tags$head(tags$script(
     #   HTML("var header = $('.navbar > .container-fluid');
     #                           header.append('<div style=\"float:right; padding-top: 8px\"><button id=\"newDirButton\" type=\"button\" class=\"btn btn-primary action-button\" >Create directory</button></div>')")
@@ -23,7 +23,7 @@ app_ui <- function(request) {
       # tags$title("MSinco"),
       id= "navbar",
       selected = "Settings",
-      shinyjs::useShinyjs(),
+      # shinyjs::useShinyjs(),
       # tags$head(tags$style(HTML(
       #   "#navbar > li:first-child { display: none; }"
       # ))),
@@ -33,7 +33,7 @@ app_ui <- function(request) {
       # tags$style(".shiny-file-input-progress {display: none}"),
 
 
-      tabPanel(title = "Home",
+      tabPanel(title = "Visualization",
                
                sidebarLayout(
                  
@@ -53,9 +53,10 @@ app_ui <- function(request) {
                    # actionButton('fileButton', 'Parameter file',width = "49%"), actionButton("folderButton", "Netcdfs folder",width = "49%"), br(), 
                    # uiOutput("LB"),
                    # uiOutput("RB"), # hr(),
-                   h5("*Parameters*"),
-                   shinyjs::hidden(uiOutput("selectedFragment")),
-                   # uiOutput("selectedFiles"),
+                   h5("Parameters"),
+                   # shinyjs::hidden(uiOutput("selectedFragment")),
+                   selectInput("selectedFragment", "Fragments", "TIC", multiple= F, selectize=TRUE),
+                   uiOutput("selectedFiles"),
                    uiOutput("rtime"), # hr(),
                    uiOutput("labelThreshold"),
                    uiOutput("rtimeL"),
@@ -110,7 +111,7 @@ app_ui <- function(request) {
                    # ),
 
                    conditionalPanel(
-                     'input.tabs === "TIC" && output.selectedFragment',
+                     'input.tabs === "TIC" && output.selectedFiles',
                      # shinyjs::hidden(uiOutput("selectedFragment")),
                      # numericInput(inputId = "rtimeL",
                      #              label = "Retention time (left)",
@@ -127,11 +128,15 @@ app_ui <- function(request) {
                      #              step = 0.1),
 
                      actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                     actionButton("run1", "run", width = "100%", style="margin-bottom:8px")
+                     
+                     
+                                     tagList(
+                                       tagAppendAttributes(actionButton("run1", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run1"
+                                       ))
 
                                         ),
                    conditionalPanel(
-                     'input.tabs === "MSpectrum" && output.selectedFragment',
+                     'input.tabs === "MSpectrum" && output.selectedFiles',
                      # numericInput(inputId = "labelThreshold",
                      #              label = "Threshold intensity for labels",
                      #              #min = 0,
@@ -147,11 +152,13 @@ app_ui <- function(request) {
                      #                    value = NULL),
 
                      actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
-                     actionButton("run2", "run", width = "100%", style="margin-bottom:8px")
+                     tagList(
+                       tagAppendAttributes(actionButton("run2", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run2"
+                       ))
 
                    ),
                    conditionalPanel(
-                     'input.tabs === "SIM" && output.selectedFragment',
+                     'input.tabs === "SIM" && output.selectedFiles',
                      # numericInput(inputId = "rtimeL",
                      #              label = "Retention time (left)",
                      #              #min = min(rawData1()@featureData@data$retentionTime),
@@ -191,8 +198,9 @@ app_ui <- function(request) {
 
                      actionButton("saveActivePlotsButton", "Save active plots", width = "100%", style="margin-bottom:8px"),
                      actionButton("saveTotable", "Save to table", width = "100%", style="margin-bottom:8px"),
-                     actionButton("run3", "run", width = "100%", style="margin-bottom:8px")
-
+                     tagList(
+                       tagAppendAttributes(actionButton("run3", "run", width = "100%", style="margin-bottom:8px"), `data-proxy-click` = "run3"
+                       ))
 
                                         ),
                 #    conditionalPanel(
@@ -289,7 +297,7 @@ app_ui <- function(request) {
                  )
                )
             ),
-      tabPanel("Parameters",
+      tabPanel("Analysis",
                sidebarLayout(
                sidebarPanel(width = 3,
                             
@@ -318,9 +326,10 @@ app_ui <- function(request) {
                  tabPanel(title = "All plots")),
       tabPanel("Settings",
                
-               wellPanel(checkboxGroupInput("settings", "Choose settings", 
+               wellPanel(h5("Settings"),
+                         checkboxGroupInput("settings", "",
                                             choiceNames = c("use parallel processing to import the data ? (parallel processing is only at the import stage, not subsequently)", "use ggplot graphics to plot ? (slower) ", "use lattice graphics to plot ? (faster)") , 
-                                            choiceValues = c("parallel","ggplot","lattice"),selected = c("parallel","lattice") ))),
+                                            choiceValues = c("parallel","ggplot","lattice"),selected = c("parallel","lattice") ))) ,
       tags$script(
         HTML("var header = $('.navbar > .container-fluid');
                               header.append('<div style=\"float:right; padding-top: 15px\"><button id=\"quitButton\" type=\"button\" class=\"btn btn-danger action-button\" >Quit</button></div>')")
