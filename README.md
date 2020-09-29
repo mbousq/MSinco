@@ -13,15 +13,11 @@ Mass Spectrometry Integrator and Corrector
 
 ## Usage
 
-This is a basic example which shows you how to solve a common problem:
 
 ``` r
 
 library(MSinco)
-#> Loading required package: data.table
 
 MSinco::run_app()
-#> Loading required package: shiny
-#> 
-#> Listening on http://127.0.0.1:6548
+
 ```

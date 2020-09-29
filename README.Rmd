@@ -23,8 +23,6 @@ Mass Spectrometry Integrator and Corrector
 
 ## Usage
 
-This is a basic example which shows you how to solve a common problem:
-
 ```{r }
 
 library(MSinco)
