@@ -20,7 +20,6 @@
 usethis::use_package("ggplot2")
 usethis::use_package("data.table", type = "Depends")
 usethis::use_package("readxl")
-usethis::use_package("gtools")
 usethis::use_package("ggplot2")
 usethis::use_package("dplyr")
 usethis::use_package("shiny")
@@ -32,6 +31,7 @@ usethis::use_package("future.apply")
 usethis::use_package("IsoCorrectoR")
 usethis::use_package("ecipex")
 usethis::use_package("xlsx")
+usethis::use_package("xlsxjars")
 usethis::use_package("openxlsx")
 ## Add modules ----
 ## Create a module infrastructure in R/

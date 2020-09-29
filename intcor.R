@@ -6,14 +6,14 @@
 # intCorServer <- function(input,output,session, rawData, pathExperimentFolder, saveAllPlots, baselineCorrection, isotopeCorrection, mzd, correctTracerImpurity= FALSE,correctAlsoMonoisotopic = FALSE) {
 intCor <- function(rawData, pathExperimentFolder, saveAllPlots, baselineCorrection, isotopeCorrection, mzd, correctTracerImpurity= FALSE,correctAlsoMonoisotopic = FALSE) {
   
-  library(readxl);library(xcms);library(reshape2);library(xcms);library(ggplot2);library(gtools);library(knitr);
-  library(tidyverse);library(plyr);library(IsoCorrectoR);library(matrixStats);library(ecipex);library(xlsx);
-  library(xlsxjars)
+  # library(readxl);library(xcms);library(reshape2);library(xcms);library(ggplot2);library(gtools);library(knitr);
+  # library(tidyverse);library(plyr);library(IsoCorrectoR);library(matrixStats);library(ecipex);library(xlsx);
+  # library(xlsxjars)
   #;library(rowr)
   
   # observe({ 
   
-  # browser()
+  browser()
   
   withProgress(message = 'Runing ...', value = 0, {
     
@@ -84,11 +84,11 @@ intCor <- function(rawData, pathExperimentFolder, saveAllPlots, baselineCorrecti
     # browser()
     netCDFs <- list.files(paste0(pathExperimentFolder,"/Netcdfs"), full.names = TRUE, pattern = ".CDF$", ignore.case = T)
     
-    rawData <- future_lapply(seq_along(netCDFs), function(i) {
-      
-      readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
-      
-    })
+    # rawData <- future_lapply(seq_along(netCDFs), function(i) {
+    #   
+    #   readMSData(mixedsort(netCDFs)[i], mode = "onDisk", msLevel. = 1)
+    #   
+    # })
     #tictoc::toc()
     # Objects
     # integrals.array <- paste0(rep("integrals.ls", length(rawData)), seq_along(rawData))
@@ -136,11 +136,7 @@ intCor <- function(rawData, pathExperimentFolder, saveAllPlots, baselineCorrecti
     rtMatrix[, 1] <- rep(parameterFile[[2]], (parameterFile[[5]] + 1)) * 60 # RT low,# +1 to account for the M0 isotopomer
     rtMatrix[, 2] <- rep(parameterFile[[3]], (parameterFile[[5]] + 1)) * 60 # RT high,# +1 to account for the M0 isotopomer
     namesMatrix[, 1] <- rep(parameterFile[[1]], parameterFile[[5]] + 1)
-    
-    
-    
-    
-    
+
     metaboliteData <- function(x) {
       # REMOVE NA VALUES in data
       if (all(is.na(myChr[x]@intensity)) == FALSE &
