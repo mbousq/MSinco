@@ -15,6 +15,10 @@ knitr::opts_chunk$set(
 
 Mass Spectrometry Integrator and Corrector
 
+![](man/figures/README-msinco.png){width="1424"}
+
+![](man/figures/README-msinco2.png)
+
 ## Installation
 
 1- Download MSinco\_0.1.tar.gz ([Releases](https://github.com/mbousq/MSinco/releases))

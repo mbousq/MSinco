@@ -3,6 +3,10 @@
 
 Mass Spectrometry Integrator and Corrector
 
+![](man/figures/README-msinco.png)
+
+![](man/figures/README-msinco2.png)
+
 ## Installation
 
 1- Download MSinco\_0.1.tar.gz
@@ -12,7 +16,6 @@ Mass Spectrometry Integrator and Corrector
 (tar.gz)
 
 ## Usage
-
 
 ``` r
 
