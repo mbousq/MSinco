@@ -150,7 +150,7 @@ app_server <- function(input, output, session) {
             p()
             MSnbase::readMSData(netCDFs, mode = "onDisk", verbose = F)
           })
-
+cat("1")
 
           names(msnExp) <- lapply(msnExp, function(msnExp) row.names(msnExp@phenoData)) # )rownames(MSnbase::phenoData(msnExp[[1]])) #filesName
 
@@ -162,7 +162,8 @@ app_server <- function(input, output, session) {
               `attr<-`("fileName", row.names(msnExp@phenoData))
           })
 
-
+          cat("2")
+          
 
           # cat(format(Sys.time(), "%X"))
 
@@ -171,7 +172,8 @@ app_server <- function(input, output, session) {
             rawData[, .(tic = sum(i)), by = .(rt)] %>% `attr<-`("fileName", attr(rawData, "fileName")) # %>% `attr<-`("file", rownames(MSnbase::phenoData(msnExp[[1]])))
           })
 
-
+          cat("3")
+          
           values[["plotIndex"]] <- findInterval(length(msnExp) / 2, seq_len(length(msnExp)), all.inside = T)
           values[["rawData"]] <- rawData
           values[["rawData_tic"]] <- rawData_tic
@@ -389,7 +391,8 @@ app_server <- function(input, output, session) {
     {
       req(input$rtimeL, input$rtimeR)
 
-
+      cat("4")
+      
       plots_tic <- lapply(values[["rawData_tic"]][input$selectedFiles], function(rawData_tic) {
         dataIndexL <- MALDIquant::match.closest(input$rtimeL * 60, rawData_tic$rt)
         dataIndexR <- MALDIquant::match.closest(input$rtimeR * 60, rawData_tic$rt)
@@ -400,7 +403,8 @@ app_server <- function(input, output, session) {
         } else {
           title <- paste0("TIC_", input$selectedFragment, "_", attr(rawData_tic, "fileName"))
         }
-
+        cat("5")
+        
 
         if (input$graphics == "1") {
           
@@ -412,7 +416,8 @@ app_server <- function(input, output, session) {
       })
 
       values[["plots_tic"]] <- plots_tic
-
+      cat("6")
+      
 
       if ("cache" %in% input$settings) {
         lapply(seq_along(plots_tic), FUN = function(i) {
@@ -432,6 +437,8 @@ app_server <- function(input, output, session) {
       }
       splitIndex <- findInterval(length(plots_tic) / 2, seq_len(length(plots_tic)), all.inside = T)
 
+      cat("7")
+      
       output$plots_ticA <- renderUI({
         lapply(seq_len(splitIndex), function(i) {
           plotOutput(paste0("tic", i, "_f", values[["runNo"]], input$run1), hover = paste0("plot_hover_tic", i, "_f", values[["runNo"]], input$run1)) # %>% shinycssloaders::withSpinner(color="#000000", size = 0.2)
