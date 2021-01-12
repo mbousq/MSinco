@@ -169,7 +169,7 @@ cat("1")
 
           rawData_tic <- lapply(rawData, function(rawData) {
             p()
-            rawData[, tic = sum(i), by = .(rt)] %>% `attr<-`("fileName", attr(rawData, "fileName")) # %>% `attr<-`("file", rownames(MSnbase::phenoData(msnExp[[1]])))
+            rawData[, .(tic = sum(i)), by = .(rt)] %>% `attr<-`("fileName", attr(rawData, "fileName")) # %>% `attr<-`("file", rownames(MSnbase::phenoData(msnExp[[1]])))
           })
 
           cat("3")
