@@ -10,6 +10,7 @@ Mass Spectrometry Integrator and Corrector
 ![](man/figures/README-sim.png)
 
 ![](man/figures/README-analysis.png)
+<img src="man/figures/README-correction.png" style="width:50.0%" />
 
 ## Installation
 

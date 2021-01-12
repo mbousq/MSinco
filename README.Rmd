@@ -22,7 +22,7 @@ Mass Spectrometry Integrator and Corrector
 ![](man/figures/README-sim.png)
 
 ![](man/figures/README-analysis.png)
-![](man/figures/README-correction.png)
+![](man/figures/README-correction.png){width=50%}
 
 ## Installation
 
