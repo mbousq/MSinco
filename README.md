@@ -3,9 +3,13 @@
 
 Mass Spectrometry Integrator and Corrector
 
-![](man/figures/README-msinco.png)
+![](man/figures/README-tic.png)
 
-![](man/figures/README-msinco2.png)
+![](man/figures/README-mspectrum.png)
+
+![](man/figures/README-sim.png)
+
+![](man/figures/README-analysis.png)
 
 ## Installation
 
