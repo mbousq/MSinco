@@ -15,21 +15,38 @@ knitr::opts_chunk$set(
 
 Mass Spectrometry Integrator and Corrector
 
-![](man/figures/README-msinco.png){width="1424"}
+![](man/figures/README-msinco.png)
 
 ![](man/figures/README-msinco2.png)
 
 ## Installation
 
-1- Download MSinco\_0.1.tar.gz ([Releases](https://github.com/mbousq/MSinco/releases))
+```{r eval=FALSE}
 
-2- In Rstudio, Install Package --\> Install from Package Archive File (tar.gz)
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+    
+    BiocManager::install("MSnbase")
+    BiocManager::install("IsoCorrectoR")
+    
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+    
+    devtools::install_github("mbousq/MSinco")
+    
+```
+
+
+
 
 ## Usage
 
-```{r }
+```{r eval=FALSE}
 
 library(MSinco)
 
-MSinco::run_app()
+run_app()
+
 ```
