@@ -9,18 +9,25 @@ Mass Spectrometry Integrator and Corrector
 
 ## Installation
 
-1- Download MSinco\_0.1.tar.gz
-([Releases](https://github.com/mbousq/MSinco/releases))
-
-2- In Rstudio, Install Package –\> Install from Package Archive File
-(tar.gz)
+``` r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+    
+    BiocManager::install("MSnbase")
+    BiocManager::install("IsoCorrectoR")
+    
+if (!requireNamespace("devtools", quietly = TRUE)) {
+    install.packages("devtools")
+}
+    
+    devtools::install_github("mbousq/MSinco")
+    
+```
 
 ## Usage
 
 ``` r
-
 library(MSinco)
-
-MSinco::run_app()
-
+run_app()
 ```
