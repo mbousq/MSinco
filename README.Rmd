@@ -22,7 +22,8 @@ Mass Spectrometry Integrator and Corrector
 ![](man/figures/README-sim.png)
 
 ![](man/figures/README-analysis.png)
-![](man/figures/README-correction.png){width=50%}
+
+<img src="man/figures/README-correction.png" width="400"/>
 
 ## Installation
 
@@ -42,9 +43,6 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
     devtools::install_github("mbousq/MSinco")
     
 ```
-
-
-
 
 ## Usage
 
